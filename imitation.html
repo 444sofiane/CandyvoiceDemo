@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CandyVoice — Imitation</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/noisefilter.css">
+<link rel="stylesheet" href="css/user-menu.css">
+<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
+
+</head>
+
+<body>
+
+<nav class="cv-nav py-3">
+  <div class="container d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
+      <span class="cv-logo">
+        <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+        CandyVoice
+      </span>
+      <span class="cv-pill">Imitation</span>
+    </div>
+    <div class="cv-feature-switcher" aria-label="Feature navigation">
+      <a class="cv-feature-link" href="deepfake.html">Deepfake detection</a>
+      <a class="cv-feature-link is-active" href="imitation.html" aria-current="page">Imitation</a>
+      <a class="cv-feature-link" href="noisefilter.html">NoizeOff</a>
+    </div>
+    <div class="cv-user-menu" id="userMenu">
+      <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false" title="Account">
+        <span class="cv-avatar-circle" id="avatarInitial">–</span>
+      </button>
+      <div class="cv-user-dropdown d-none" id="userDropdown">
+        <p class="cv-user-email" id="userEmailDisplay">—</p>
+        <div class="cv-user-usage">
+          <div class="cv-user-usage-row">
+            <span class="cv-user-usage-label">Audio processed</span>
+            <span class="cv-user-usage-value" id="usageValue">0.0 / 60 min</span>
+          </div>
+          <div class="cv-usage-bar-track">
+            <div class="cv-usage-bar-fill" id="usageBarFill"></div>
+          </div>
+        </div>
+        <hr class="cv-user-divider">
+        <button type="button" class="cv-user-signout" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container cv-hero">
+  <div class="row g-5">
+    <div class="col-lg-5">
+      <div class="cv-eyebrow mb-2">Voice analysis</div>
+      <h1 class="mb-3">Match a speaker's style.<br><span class="accent">Keep the same interface language.</span></h1>
+      <p class="lead mb-4">The Imitation page is part of the feature menu, but it is still a placeholder. It mirrors the NoizeOff layout so future controls can be added without redesigning the workspace.</p>
+
+      <ul class="list-unstyled cv-side-list">
+        <li><span class="dot">1</span><span>Use the menu to jump between all three CandyVoice tools.</span></li>
+        <li><span class="dot">2</span><span>This screen shares the same spacing, card, and accent treatment.</span></li>
+        <li><span class="dot">3</span><span>No processing is wired into this view yet.</span></li>
+      </ul>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="cv-card cv-placeholder-card p-4 p-md-5">
+        <div>
+          <span class="cv-placeholder-badge mb-3">Preview</span>
+          <div class="cv-placeholder-stage">
+            <div class="cv-placeholder-visual">
+              <h3>Imitation</h3>
+              <p>This page is reserved for the future imitation workflow. For now it only presents the same polished shell as NoizeOff, with no treatment controls enabled.</p>
+              <div class="cv-placeholder-status">No treatment available yet</div>
+            </div>
+          </div>
+        </div>
+        <p class="cv-footer-note mt-3 mb-0">When the feature is ready, the analysis UI can be mounted into this panel without changing the navigation or styling.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/auth-guard.js"></script>
+
+</body>
+</html>

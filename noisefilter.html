@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CandyVoice — NoizzOff</title>
+<title>CandyVoice — NoizeOff</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,12 +21,17 @@
 
 <nav class="cv-nav py-3">
   <div class="container d-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
       <span class="cv-logo">
         <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
         CandyVoice
       </span>
-      <span class="cv-pill">NoizzOff</span>
+      <span class="cv-pill">NoizeOff</span>
+    </div>
+    <div class="cv-feature-switcher" aria-label="Feature navigation">
+      <a class="cv-feature-link" href="deepfake.html">Deepfake detection</a>
+      <a class="cv-feature-link" href="imitation.html">Imitation</a>
+      <a class="cv-feature-link is-active" href="noisefilter.html" aria-current="page">NoizeOff</a>
     </div>
     <div class="cv-user-menu" id="userMenu">
       <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false" title="Account">
@@ -55,7 +60,7 @@
     <div class="col-lg-5">
       <div class="cv-eyebrow mb-2">Audio tools</div>
       <h1 class="mb-3">Strip the noise.<br><span class="accent">Keep the voice.</span></h1>
-      <p class="lead mb-4">Upload any audio file and CandyVoice's NoizzOff removes hiss, hum, and background clutter — leaving a clean, broadcast-ready track.</p>
+      <p class="lead mb-4">Upload any audio file and CandyVoice's NoizeOff removes hiss, hum, and background clutter — leaving a clean, broadcast-ready track.</p>
 
       <ul class="list-unstyled cv-side-list">
         <li><span class="dot">1</span><span>Drop in any audio file — WAV, MP3, M4A, FLAC, OGG.</span></li>

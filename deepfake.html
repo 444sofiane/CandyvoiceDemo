@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CandyVoice — Deepfake detection</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/noisefilter.css">
+<link rel="stylesheet" href="css/user-menu.css">
+<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
+
+</head>
+
+<body>
+
+<nav class="cv-nav py-3">
+  <div class="container d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
+      <span class="cv-logo">
+        <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+        CandyVoice
+      </span>
+      <span class="cv-pill">Deepfake detection</span>
+    </div>
+    <div class="cv-feature-switcher" aria-label="Feature navigation">
+      <a class="cv-feature-link is-active" href="deepfake.html" aria-current="page">Deepfake detection</a>
+      <a class="cv-feature-link" href="imitation.html">Imitation</a>
+      <a class="cv-feature-link" href="noisefilter.html">NoizeOff</a>
+    </div>
+    <div class="cv-user-menu" id="userMenu">
+      <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false" title="Account">
+        <span class="cv-avatar-circle" id="avatarInitial">–</span>
+      </button>
+      <div class="cv-user-dropdown d-none" id="userDropdown">
+        <p class="cv-user-email" id="userEmailDisplay">—</p>
+        <div class="cv-user-usage">
+          <div class="cv-user-usage-row">
+            <span class="cv-user-usage-label">Audio processed</span>
+            <span class="cv-user-usage-value" id="usageValue">0.0 / 60 min</span>
+          </div>
+          <div class="cv-usage-bar-track">
+            <div class="cv-usage-bar-fill" id="usageBarFill"></div>
+          </div>
+        </div>
+        <hr class="cv-user-divider">
+        <button type="button" class="cv-user-signout" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container cv-hero">
+  <div class="row g-5">
+    <div class="col-lg-5">
+      <div class="cv-eyebrow mb-2">Voice security</div>
+      <h1 class="mb-3">Spot synthetic audio.<br><span class="accent">Check what sounds real.</span></h1>
+      <p class="lead mb-4">Deepfake detection will share the same CandyVoice design language as NoizeOff, but for now this screen is a preview only. It shows where analysis controls and results will live later.</p>
+
+      <ul class="list-unstyled cv-side-list">
+        <li><span class="dot">1</span><span>Open the feature from the menu to stay in the same workspace.</span></li>
+        <li><span class="dot">2</span><span>The layout matches the NoizeOff page, so every tool feels consistent.</span></li>
+        <li><span class="dot">3</span><span>Detection logic is not active yet on this window.</span></li>
+      </ul>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="cv-card cv-placeholder-card p-4 p-md-5">
+        <div>
+          <span class="cv-placeholder-badge mb-3">Preview</span>
+          <div class="cv-placeholder-stage">
+            <div class="cv-placeholder-visual">
+              <h3>Deepfake detection</h3>
+              <p>This window is ready for the future detector workflow. It currently keeps the same visual system as NoizeOff, but no file analysis runs here yet.</p>
+              <div class="cv-placeholder-status">No treatment available yet</div>
+            </div>
+          </div>
+        </div>
+        <p class="cv-footer-note mt-3 mb-0">When the detector is connected, the results panel can be dropped into this card without changing the page shell.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/auth-guard.js"></script>
+
+</body>
+</html>
