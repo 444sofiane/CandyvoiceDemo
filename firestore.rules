@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // usage/{uid} — one doc per user, holding their cumulative minutes.
+    match /usage/{uid} {
+      // A signed-in user can read only their own usage document.
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Nobody writes this from the client — ever. The recordUsage Cloud
+      // Function uses the Admin SDK, which bypasses these rules entirely,
+      // so this "allow write: if false" doesn't block the function; it
+      // only blocks someone editing the value directly from dev tools.
+      allow write: if false;
+    }
+  }
+}

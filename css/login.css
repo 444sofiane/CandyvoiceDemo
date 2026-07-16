@@ -1,0 +1,78 @@
+/* Login-only additions — everything else (nav, hero, card, buttons,
+   footer notes) comes from css/noisefilter.css so the two pages stay
+   visually identical. This file only adds what a login form needs that
+   the noise-filter page never had: text inputs, labels, and inline
+   validation messages. */
+
+.cv-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.cv-label {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #2b2340;
+  margin-bottom: 0.4rem;
+}
+
+.cv-input {
+  font-family: "Inter", sans-serif;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e3ddf0;
+  border-radius: 12px;
+  background: #fbfaff;
+  color: #1f1a2e;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.cv-input::placeholder {
+  color: #a79fc2;
+}
+
+.cv-input:focus {
+  outline: none;
+  border-color: #6C2BD9;
+  box-shadow: 0 0 0 3px rgba(108, 43, 217, 0.15);
+  background: #ffffff;
+}
+
+.cv-input.is-invalid {
+  border-color: #e0435c;
+  background: #fff6f7;
+}
+
+.cv-input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(224, 67, 92, 0.15);
+}
+
+.cv-field-error {
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  color: #e0435c;
+  margin: 0.35rem 0 0;
+}
+
+.cv-inline-link {
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6C2BD9;
+  text-decoration: none;
+}
+
+.cv-inline-link:hover {
+  text-decoration: underline;
+}
+
+.cv-primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.cv-footer-note.text-success {
+  color: #1f9d55;
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CandyVoice — Sign In</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/noisefilter.css">
+<link rel="stylesheet" href="css/login.css">
+<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
+
+</head>
+
+<body>
+
+<nav class="cv-nav py-3">
+  <div class="container d-flex align-items-center justify-content-between">
+    <span class="cv-logo">
+      <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+      CandyVoice
+    </span>
+    <span class="cv-pill">Sign In</span>
+  </div>
+</nav>
+
+<div class="container cv-hero">
+  <div class="row g-5">
+    <div class="col-lg-5">
+      <div class="cv-eyebrow mb-2">Sign in</div>
+      <h1 class="mb-3">Welcome back.<br><span class="accent">Let's clean some audio.</span></h1>
+      <p class="lead mb-4">Sign in with your work email to open the Noise Filter. CandyVoice is built for teams, so we keep it to professional accounts — personal inboxes won't get through.</p>
+
+      <ul class="list-unstyled cv-side-list">
+        <li><span class="dot">1</span><span>Enter your work email and password.</span></li>
+        <li><span class="dot">2</span><span>We check it's a professional address, not a personal inbox.</span></li>
+        <li><span class="dot">3</span><span>You're dropped straight into the Noise Filter.</span></li>
+      </ul>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="cv-card p-4 p-md-5">
+
+        <form id="loginForm" novalidate>
+
+          <h3 class="mb-3" id="formTitle">Sign in</h3>
+
+          <div class="cv-field mb-3">
+            <label for="emailInput" class="cv-label">Work email</label>
+            <input type="email" class="cv-input" id="emailInput" placeholder="you@yourcompany.com" autocomplete="email" required>
+            <p class="cv-field-error d-none" id="emailError"></p>
+          </div>
+
+          <div class="cv-field mb-2">
+            <label for="passwordInput" class="cv-label">Password</label>
+            <input type="password" class="cv-input" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required>
+            <p class="cv-field-error d-none" id="passwordError"></p>
+          </div>
+
+          <div class="d-flex justify-content-end mb-3">
+            <a href="#" class="cv-inline-link">Forgot password?</a>
+          </div>
+
+          <div id="formMessage" class="cv-footer-note mb-3"></div>
+
+          <button type="submit" class="cv-primary-btn w-100" id="signInBtn">Sign in</button>
+
+          <p class="cv-footer-note mt-3 mb-0">
+            Don't have an account yet? <a href="register.html" class="cv-inline-link">Create one</a>
+          </p>
+
+          <p class="cv-footer-note mt-3 mb-0">
+            Personal providers like Gmail, Yahoo, Outlook.com, and iCloud aren't accepted — please use your company email address.
+          </p>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/login.js"></script>
+
+</body>
+</html>

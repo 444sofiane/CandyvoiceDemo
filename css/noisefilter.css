@@ -1,0 +1,273 @@
+:root{
+    --cv-purple-900:#3B1266;
+    --cv-purple-700:#6C2BD9;
+    --cv-purple-500:#8B5CF6;
+    --cv-purple-300:#C4A9F5;
+    --cv-purple-100:#F1EBFC;
+    --cv-ink:#1E1B2E;
+    --cv-white:#FFFFFF;
+    --cv-line:#E7DEFA;
+    --cv-success:#1FA971;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    background:var(--cv-white);
+    color:var(--cv-ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+
+  h1,h2,h3,.display-font{
+    font-family:'Sora',sans-serif;
+  }
+
+  /* NAVBAR */
+  .cv-nav{
+    border-bottom:1px solid var(--cv-line);
+    background:var(--cv-white);
+  }
+  .cv-logo{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:1.25rem;
+    color:var(--cv-ink);
+    letter-spacing:-.01em;
+  }
+  
+  .cv-pill{
+    font-size:.72rem;
+    font-weight:600;
+    color:var(--cv-purple-700);
+    background:var(--cv-purple-100);
+    border:1px solid var(--cv-line);
+    padding:.25rem .65rem;
+    border-radius:99px;
+    letter-spacing:.02em;
+  }
+
+  /* HERO */
+  .cv-hero{
+    padding:3.5rem 0 1.5rem;
+  }
+  .cv-eyebrow{
+    font-size:.78rem;
+    font-weight:600;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--cv-purple-700);
+  }
+  .cv-hero h1{
+    font-size:2.6rem;
+    font-weight:800;
+    letter-spacing:-.02em;
+    line-height:1.08;
+    max-width:640px;
+  }
+  .cv-hero p.lead{
+    color:#59536E;
+    max-width:520px;
+    font-size:1.05rem;
+  }
+  .cv-hero .accent{
+    background:linear-gradient(90deg,var(--cv-purple-700),var(--cv-purple-500));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  /* DROPZONE CARD */
+  .cv-card{
+    background:var(--cv-white);
+    border:1px solid var(--cv-line);
+    border-radius:22px;
+    box-shadow:0 20px 45px -25px rgba(108,43,217,.35);
+  }
+
+  .cv-dropzone{
+    border:2px dashed var(--cv-purple-300);
+    border-radius:18px;
+    background:var(--cv-purple-100);
+    padding:2.4rem 1.5rem;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .2s ease, background .2s ease, transform .12s ease;
+  }
+  .cv-dropzone:hover{
+    border-color:var(--cv-purple-500);
+  }
+  .cv-dropzone.dragover{
+    border-color:var(--cv-purple-700);
+    background:#EADDFB;
+    transform:scale(1.005);
+  }
+  .cv-drop-icon{
+    width:52px;height:52px;
+    margin:0 auto .9rem;
+    border-radius:50%;
+    background:var(--cv-white);
+    border:1px solid var(--cv-line);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cv-dropzone h3{
+    font-size:1.05rem;
+    font-weight:700;
+    margin-bottom:.25rem;
+  }
+  .cv-dropzone p{
+    color:#6B6480;
+    font-size:.88rem;
+    margin-bottom:0;
+  }
+  .cv-browse-btn{
+    background:var(--cv-purple-700);
+    border:none;
+    color:#fff;
+    font-weight:600;
+    font-size:.85rem;
+    padding:.5rem 1.15rem;
+    border-radius:10px;
+    margin-top:1rem;
+  }
+  .cv-browse-btn:hover{background:var(--cv-purple-900);color:#fff;}
+
+
+  /* FILE ROW */
+  .cv-file-row{
+    border:1px solid var(--cv-line);
+    border-radius:14px;
+    padding:.85rem 1rem;
+    display:flex;
+    align-items:center;
+    gap:.85rem;
+  }
+  .cv-file-icon{
+    width:38px;height:38px;
+    border-radius:10px;
+    background:var(--cv-purple-100);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--cv-purple-700);
+    flex-shrink:0;
+  }
+  .cv-file-name{
+    font-weight:600;
+    font-size:.92rem;
+    margin-bottom:0;
+    word-break:break-all;
+  }
+  .cv-file-meta{
+    font-size:.78rem;
+    color:#8A83A0;
+  }
+  .cv-remove-btn{
+    border:none;background:transparent;color:#9A93AF;
+    font-size:1.1rem;line-height:1;
+  }
+  .cv-remove-btn:hover{color:#E5484D;}
+
+  /* STATUS STEPS */
+  .cv-status-badge{
+    font-size:.75rem;
+    font-weight:600;
+    padding:.3rem .7rem;
+    border-radius:99px;
+  }
+  .cv-status-idle{background:#F1EFF6;color:#6B6480;}
+  .cv-status-processing{background:#FDF0D9;color:#B7791F;}
+  .cv-status-done{background:#E4F7EE;color:var(--cv-success);}
+
+  .cv-progress{
+    height:8px;
+    border-radius:99px;
+    background:var(--cv-purple-100);
+    overflow:hidden;
+  }
+  .cv-progress-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--cv-purple-700),var(--cv-purple-500));
+    transition:width .25s ease;
+  }
+
+  /* ACTION BUTTON */
+  .cv-primary-btn{
+    background:var(--cv-purple-700);
+    border:none;
+    color:#fff;
+    font-weight:700;
+    font-size:.95rem;
+    padding:.7rem 1.4rem;
+    border-radius:12px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .cv-primary-btn:hover:not(:disabled){background:var(--cv-purple-900);color:#fff;transform:translateY(-1px);}
+  .cv-primary-btn:disabled{background:#D9D2EC;color:#fff;cursor:not-allowed;}
+
+  .cv-ghost-btn{
+    background:var(--cv-white);
+    border:1px solid var(--cv-line);
+    color:var(--cv-ink);
+    font-weight:600;
+    font-size:.9rem;
+    padding:.65rem 1.3rem;
+    border-radius:12px;
+  }
+  .cv-ghost-btn:hover{border-color:var(--cv-purple-500);color:var(--cv-purple-700);}
+
+  audio{
+    width:100%;
+    height:38px;
+  }
+
+  .cv-footer-note{
+    font-size:.8rem;
+    color:#9992AA;
+  }
+
+  .cv-side-list li{
+    display:flex;
+    gap:.65rem;
+    align-items:flex-start;
+    margin-bottom:1rem;
+    font-size:.9rem;
+    color:#4E4763;
+  }
+  .cv-side-list .dot{
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--cv-purple-100);
+    color:var(--cv-purple-700);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    margin-top:.05rem;
+  }
+
+  /* LEVEL GRAPH */
+  .cv-level-graph-wrap {
+    background: #000;
+    border-radius: 10px;
+    padding: 6px;
+    overflow: hidden;
+  }
+  #levelCanvas {
+    display: block;
+    width: 100%;
+    height: 220px;
+  }
+
+  /* SPECTROGRAM */
+  .cv-spectrogram-wrap {
+    background: #000;
+    border-radius: 10px;
+    padding: 6px;
+    overflow: hidden;
+    min-height: 140px;
+  }
+  .cv-spectrogram-wrap canvas {
+    display: block;
+    width: 100% !important;
+  }
