@@ -58,7 +58,6 @@ export function createLevelGraph({ levelCanvas, originalAudio, resultAudio, setM
   function draw() {
     const w = levelCanvas.clientWidth;
     const h = levelCanvas.clientHeight;
-    const mid = h / 2;
 
     ctx2d.fillStyle = '#000';
     ctx2d.fillRect(0, 0, w, h);
@@ -73,25 +72,26 @@ export function createLevelGraph({ levelCanvas, originalAudio, resultAudio, setM
       ctx2d.lineTo(x, h);
       ctx2d.stroke();
     }
-    [0.25, 0.5, 0.75].forEach((f) => {
+    // Reference lines at 25/50/75/100% of the 0–1 range, measured from the bottom.
+    [0.25, 0.5, 0.75, 1].forEach((f) => {
+      const y = h - h * f;
       ctx2d.beginPath();
-      ctx2d.moveTo(0, h * f);
-      ctx2d.lineTo(w, h * f);
+      ctx2d.moveTo(0, y);
+      ctx2d.lineTo(w, y);
       ctx2d.stroke();
     });
-    ctx2d.beginPath();
-    ctx2d.moveTo(0, mid);
-    ctx2d.lineTo(w, mid);
-    ctx2d.stroke();
 
     const stepX = w / (HISTORY - 1);
 
+    // Values are always 0–1 (peakLevel takes an absolute value), so plot
+    // straight off the bottom edge instead of around a vertical center —
+    // 0 sits on the floor, 1 reaches the top.
     ctx2d.strokeStyle = '#ff2b2b';
     ctx2d.lineWidth = 2;
     ctx2d.beginPath();
     inLevels.forEach((v, i) => {
       const x = i * stepX;
-      const y = mid - v * mid;
+      const y = h - v * h;
       if (i === 0) ctx2d.moveTo(x, y);
       else ctx2d.lineTo(x, y);
     });
@@ -102,19 +102,21 @@ export function createLevelGraph({ levelCanvas, originalAudio, resultAudio, setM
     ctx2d.beginPath();
     outLevels.forEach((v, i) => {
       const x = i * stepX;
-      const y = mid - v * mid;
+      const y = h - v * h;
       if (i === 0) ctx2d.moveTo(x, y);
       else ctx2d.lineTo(x, y);
     });
     ctx2d.stroke();
 
-    ctx2d.fillStyle = '#ffe600';
+    // Both labels moved to the top: with 0 now resting at the bottom edge,
+    // a bottom-anchored label would sit right on top of a near-silent trace.
     ctx2d.font = '600 13px Inter, sans-serif';
     ctx2d.textBaseline = 'top';
     ctx2d.textAlign = 'right';
+    ctx2d.fillStyle = '#ff2b2b';
     ctx2d.fillText(`Niveau In: ${lastIn.toFixed(3)}`, w - 8, 6);
-    ctx2d.textBaseline = 'bottom';
-    ctx2d.fillText(`Niveau Out: ${lastOut.toFixed(3)}`, w - 8, h - 6);
+    ctx2d.fillStyle = '#26e0ff';
+    ctx2d.fillText(`Niveau Out: ${lastOut.toFixed(3)}`, w - 8, 24);
   }
 
   function tick() {
