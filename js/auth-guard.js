@@ -84,6 +84,15 @@ function setupUserMenu(user) {
   });
 }
 
+// Upper bound on how long we'll hold the navigation open for the feature
+// interest ping to complete. This request needs a CORS preflight (custom
+// Authorization header + JSON body), and `keepalive: true` alone doesn't
+// reliably carry a preflighted request through a document teardown — the
+// OPTIONS can succeed while the real POST never fires. Waiting (briefly)
+// before navigating is what actually guarantees delivery; the timeout just
+// makes sure a slow/broken network can't trap the user on the page.
+const FEATURE_INTEREST_NAV_TIMEOUT_MS = 800;
+
 function setupFeatureInterestTracking(user) {
   const featureLinks = Array.from(document.querySelectorAll('.cv-feature-link'));
   if (!featureLinks.length) return;
@@ -95,17 +104,25 @@ function setupFeatureInterestTracking(user) {
     if (link.getAttribute('aria-current') === 'page') return;
 
     link.addEventListener('click', (event) => {
-      event.preventDefault();
-
-      const destination = link.href;
-      const feature = featureFromLink(link);
-      if (feature) {
-        void sendFeatureInterest(user, feature);
-      }
-
-      window.location.href = destination;
+      void handleFeatureLinkClick(event, link, user);
     });
   });
+}
+
+async function handleFeatureLinkClick(event, link, user) {
+  event.preventDefault();
+
+  const destination = link.href;
+  const feature = featureFromLink(link);
+
+  if (feature) {
+    await Promise.race([
+      sendFeatureInterest(user, feature),
+      new Promise((resolve) => setTimeout(resolve, FEATURE_INTEREST_NAV_TIMEOUT_MS)),
+    ]);
+  }
+
+  window.location.href = destination;
 }
 
 function featureFromLink(link) {

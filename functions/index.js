@@ -53,6 +53,18 @@ function normalizeFeatureName(value) {
   return null;
 }
 
+/**
+ * HubSpot "Date picker" properties (as opposed to "Date and time picker")
+ * reject anything that isn't exactly midnight UTC — a plain
+ * `new Date().toISOString()` gets rejected with INVALID_DATE because it
+ * carries the actual time of day. This truncates to the UTC calendar day.
+ * If a property is switched to "Date and time picker" in HubSpot, use
+ * `new Date().toISOString()` directly for that property instead.
+ */
+function toHubspotDateOnly(date = new Date()) {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
 function getFavoriteFeature(clickCounts) {
   const entries = Object.entries(clickCounts);
   if (!entries.length) return null;
@@ -117,7 +129,6 @@ exports.trackFeatureInterest = onRequest(
     }
 
     const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`;
-    const clickedAt = new Date().toISOString();
     const currentProps = FEATURE_CLICK_PROPERTIES[featureKey];
 
     let clickCounts = {
@@ -149,9 +160,9 @@ exports.trackFeatureInterest = onRequest(
       firebase_uid: decodedToken.uid,
       [currentProps.count]: clickCounts[featureKey],
       last_feature_clicked: currentProps.label,
-      last_feature_clicked_at: clickedAt,
+      last_feature_clicked_at: toHubspotDateOnly(),
       favorite_feature: getFavoriteFeature(clickCounts),
-      favorite_feature_updated_at: clickedAt,
+      favorite_feature_updated_at: toHubspotDateOnly(),
     };
 
     try {
