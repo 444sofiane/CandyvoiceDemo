@@ -1,5 +1,5 @@
 const functionsV1 = require('firebase-functions/v1');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
@@ -28,6 +28,166 @@ const HUBSPOT_HEADERS = () => ({
   Authorization: `Bearer ${process.env.HUBSPOT_TOKEN}`,
   'Content-Type': 'application/json',
 });
+
+const FEATURE_CLICK_PROPERTIES = {
+  deepfake: {
+    count: 'feature_clicks_deepfake',
+    label: 'Deepfake detection',
+  },
+  imitation: {
+    count: 'feature_clicks_imitation',
+    label: 'Imitation',
+  },
+  noizeoff: {
+    count: 'feature_clicks_noizeoff',
+    label: 'NoizeOff',
+  },
+};
+
+function normalizeFeatureName(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized.includes('deepfake')) return 'deepfake';
+  if (normalized.includes('imitation')) return 'imitation';
+  if (normalized.includes('noizeoff') || normalized.includes('noiseoff') || normalized.includes('noise filter')) return 'noizeoff';
+  return null;
+}
+
+function getFavoriteFeature(clickCounts) {
+  const entries = Object.entries(clickCounts);
+  if (!entries.length) return null;
+
+  let favorite = entries[0];
+  for (const entry of entries.slice(1)) {
+    if (entry[1] > favorite[1]) favorite = entry;
+  }
+
+  return FEATURE_CLICK_PROPERTIES[favorite[0]]?.label || null;
+}
+
+exports.trackFeatureInterest = onRequest(
+  { secrets: ['HUBSPOT_TOKEN'], serviceAccount: SERVICE_ACCOUNT },
+  async (request, response) => {
+    response.set('Access-Control-Allow-Origin', '*');
+    response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (request.method === 'OPTIONS') {
+      response.status(204).send('');
+      return;
+    }
+
+    if (request.method !== 'POST') {
+      response.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const authHeader = request.get('Authorization') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+      response.status(401).json({ error: 'Missing Firebase auth token' });
+      return;
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = await auth.verifyIdToken(token);
+    } catch (error) {
+      response.status(401).json({ error: 'Invalid Firebase auth token' });
+      return;
+    }
+
+    const featureKey = normalizeFeatureName(request.body?.feature || request.body?.featureKey || request.query?.feature);
+    if (!featureKey) {
+      response.status(400).json({ error: 'feature is required' });
+      return;
+    }
+
+    let user;
+    try {
+      user = await auth.getUser(decodedToken.uid);
+    } catch (error) {
+      response.status(404).json({ error: 'Authenticated user not found' });
+      return;
+    }
+
+    if (!user.email) {
+      response.status(400).json({ error: 'User email is required' });
+      return;
+    }
+
+    const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`;
+    const clickedAt = new Date().toISOString();
+    const currentProps = FEATURE_CLICK_PROPERTIES[featureKey];
+
+    let clickCounts = {
+      deepfake: 0,
+      imitation: 0,
+      noizeoff: 0,
+    };
+
+    try {
+      const existing = await axios.get(contactUrl, { headers: HUBSPOT_HEADERS() });
+      const properties = existing.data?.properties || {};
+      clickCounts = {
+        deepfake: Number(properties.feature_clicks_deepfake || 0),
+        imitation: Number(properties.feature_clicks_imitation || 0),
+        noizeoff: Number(properties.feature_clicks_noizeoff || 0),
+      };
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        console.error('HubSpot feature lookup failed:', error.response?.data || error.message);
+        response.status(502).json({ error: 'Could not read HubSpot contact' });
+        return;
+      }
+    }
+
+    clickCounts[featureKey] += 1;
+
+    const properties = {
+      email: user.email,
+      firebase_uid: decodedToken.uid,
+      [currentProps.count]: clickCounts[featureKey],
+      last_feature_clicked: currentProps.label,
+      last_feature_clicked_at: clickedAt,
+      favorite_feature: getFavoriteFeature(clickCounts),
+      favorite_feature_updated_at: clickedAt,
+    };
+
+    try {
+      await axios.patch(
+        contactUrl,
+        { properties },
+        { headers: HUBSPOT_HEADERS() },
+      );
+    } catch (error) {
+      if (error.response?.status === 404) {
+        try {
+          await axios.post(
+            'https://api.hubapi.com/crm/v3/objects/contacts',
+            { properties: { ...properties, [currentProps.count]: clickCounts[featureKey] } },
+            { headers: HUBSPOT_HEADERS() },
+          );
+        } catch (createError) {
+          console.error('HubSpot feature interest create failed:', createError.response?.data || createError.message);
+          response.status(502).json({ error: 'Could not create HubSpot contact' });
+          return;
+        }
+      } else {
+        console.error('HubSpot feature interest sync failed:', error.response?.data || error.message);
+        response.status(502).json({ error: 'Could not update HubSpot contact' });
+        return;
+      }
+    }
+
+    response.json({
+      ok: true,
+      feature: currentProps.label,
+      favoriteFeature: getFavoriteFeature(clickCounts),
+      clickCounts,
+    });
+  },
+);
 
 /**
  * Fires automatically right after a new Firebase Auth user is created.

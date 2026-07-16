@@ -1,7 +1,10 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { auth } from './firebase-init.js';
+import { firebaseConfig } from './firebase-config.js';
 import { getCachedUsageMinutes, subscribeUsage, formatQuota, USAGE_QUOTA_MINUTES } from './usage-client.js';
 import { syncEmailVerifiedStatus } from './hubspot-verification-sync.js';
+
+const featureInterestEndpoint = `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/trackFeatureInterest`;
 
 document.documentElement.style.visibility = 'hidden';
 
@@ -18,6 +21,7 @@ onAuthStateChanged(auth, (user) => {
 
   document.documentElement.style.visibility = 'visible';
   setupUserMenu(user);
+  setupFeatureInterestTracking(user);
 
   // Defensive re-sync: covers a verified user landing here without ever
   // clicking "I've verified" on verify-email.html (e.g. verified in another
@@ -78,4 +82,53 @@ function setupUserMenu(user) {
     await signOut(auth);
     window.location.href = 'login.html';
   });
+}
+
+function setupFeatureInterestTracking(user) {
+  const featureLinks = Array.from(document.querySelectorAll('.cv-feature-link'));
+  if (!featureLinks.length) return;
+
+  featureLinks.forEach((link) => {
+    if (link.dataset.featureTrackingBound === 'true') return;
+    link.dataset.featureTrackingBound = 'true';
+
+    if (link.getAttribute('aria-current') === 'page') return;
+
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      const destination = link.href;
+      const feature = featureFromLink(link);
+      if (feature) {
+        void sendFeatureInterest(user, feature);
+      }
+
+      window.location.href = destination;
+    });
+  });
+}
+
+function featureFromLink(link) {
+  const href = (link.getAttribute('href') || '').toLowerCase();
+  if (href.includes('deepfake')) return 'deepfake';
+  if (href.includes('imitation')) return 'imitation';
+  if (href.includes('noise') || href.includes('noisefilter')) return 'noizeoff';
+  return null;
+}
+
+async function sendFeatureInterest(user, feature) {
+  try {
+    const token = await user.getIdToken();
+    await fetch(featureInterestEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ feature }),
+      keepalive: true,
+    });
+  } catch (error) {
+    console.warn('Feature interest tracking failed:', error);
+  }
 }
