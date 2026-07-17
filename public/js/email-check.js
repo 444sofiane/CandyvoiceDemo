@@ -1,20 +1,21 @@
 
-const FREE_EMAIL_DOMAINS = new Set([
-  // 'gmail.com', 'googlemail.com',
-  'yahoo.com', 'yahoo.co.uk', 'ymail.com', 'rocketmail.com',
-  'hotmail.com', 'outlook.com', 'live.com', 'msn.com',
-  'aol.com',
-  'icloud.com', 'me.com', 'mac.com',
-  'protonmail.com', 'proton.me', 'pm.me',
-  'gmx.com', 'gmx.net', 'web.de',
-  'mail.com', 'inbox.com',
-  'yandex.com', 'yandex.ru',
-  'zoho.com',
-  'qq.com', '163.com', '126.com',
-  'naver.com',
-  'rediffmail.com',
-  'fastmail.com', 'hey.com',
-]);
+const EMAIL_DOMAINS_URL = new URL('../assets/public_email_domains-ALL.txt', import.meta.url);
+
+async function loadFreeEmailDomains() {
+  const response = await fetch(EMAIL_DOMAINS_URL);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load free email domains: ${response.status} ${response.statusText}`);
+  }
+
+  const text = await response.text();
+  return text
+    .split(/\r?\n/)
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+const FREE_EMAIL_DOMAINS = new Set(await loadFreeEmailDomains());
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

@@ -1,6 +1,7 @@
 {
   "projects": {
-    "staging": "candyvoice"
+    "staging": "candyvoice",
+    "default": "candyvoice"
   },
   "targets": {},
   "etags": {}
