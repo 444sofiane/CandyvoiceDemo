@@ -1,14 +1,20 @@
-const EMAIL_DOMAINS_URL = new URL('../assets/public_email_domains-ALL.txt', import.meta.url);
-let freeEmailDomainsPromise = null;
 
-function getFreeEmailDomains() {
-  if (!freeEmailDomainsPromise) {
-    freeEmailDomainsPromise = fetch(EMAIL_DOMAINS_URL)
-      .then((r) => r.text())
-      .then((text) => new Set(text.split(/\r?\n/).map((d) => d.trim().toLowerCase()).filter(Boolean)));
-  }
-  return freeEmailDomainsPromise;
-}
+const FREE_EMAIL_DOMAINS = new Set([
+   'gmail.com', 'googlemail.com',
+  'yahoo.com', 'yahoo.co.uk', 'ymail.com', 'rocketmail.com',
+  'hotmail.com', 'outlook.com', 'outlook.fr', 'live.com', 'msn.com',
+  'aol.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'protonmail.com', 'proton.me', 'pm.me',
+  'gmx.com', 'gmx.net', 'web.de',
+  'mail.com', 'inbox.com',
+  'yandex.com', 'yandex.ru',
+  'zoho.com',
+  'qq.com', '163.com', '126.com',
+  'naver.com',
+  'rediffmail.com',
+  'fastmail.com', 'hey.com',
+]);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,8 +27,7 @@ export function getEmailDomain(email) {
   return parts.length === 2 ? parts[1] : null;
 }
 
-export async function checkProfessionalEmail(email) {
-  const domains = await getFreeEmailDomains();
+export function checkProfessionalEmail(email) {
   const trimmed = email.trim();
 
   if (!trimmed) {
@@ -33,7 +38,7 @@ export async function checkProfessionalEmail(email) {
   }
 
   const domain = getEmailDomain(trimmed);
-  if (domains.has(domain)) {
+  if (FREE_EMAIL_DOMAINS.has(domain)) {
     return { valid: false, reason: `${domain} is a personal email provider — please use your work email.` };
   }
 
