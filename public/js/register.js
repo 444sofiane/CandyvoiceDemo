@@ -60,9 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let hasError = false;
 
-    const emailCheck = checkProfessionalEmail(emailInput.value);
-    if (!emailCheck.valid) {
-      showFieldError(emailInput, emailError, emailCheck.reason);
+    const emailCheck = await Promise.resolve(checkProfessionalEmail(emailInput.value));
+    if (!emailCheck?.valid) {
+      showFieldError(emailInput, emailError, emailCheck?.reason || 'Enter a valid work email address.');
       hasError = true;
     } else {
       clearFieldError(emailInput, emailError);

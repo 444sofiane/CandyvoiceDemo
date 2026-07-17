@@ -1,5 +1,5 @@
 
-const FREE_EMAIL_DOMAINS = new Set([
+const FALLBACK_FREE_EMAIL_DOMAINS = [
    'gmail.com', 'googlemail.com',
   'yahoo.com', 'yahoo.co.uk', 'ymail.com', 'rocketmail.com',
   'hotmail.com', 'outlook.com', 'outlook.fr', 'live.com', 'msn.com',
@@ -14,7 +14,30 @@ const FREE_EMAIL_DOMAINS = new Set([
   'naver.com',
   'rediffmail.com',
   'fastmail.com', 'hey.com',
-]);
+];
+
+const FREE_EMAIL_DOMAINS = new Set(FALLBACK_FREE_EMAIL_DOMAINS);
+const EMAIL_DOMAINS_URL = new URL('../assets/public_email_domains-ALL.txt', import.meta.url);
+
+async function hydrateFreeEmailDomains() {
+  try {
+    const response = await fetch(EMAIL_DOMAINS_URL);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = await response.text();
+    text
+      .split(/\r?\n/)
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean)
+      .forEach((domain) => FREE_EMAIL_DOMAINS.add(domain));
+  } catch (error) {
+    console.warn('Could not load public email domains list, fallback list will be used.', error);
+  }
+}
+
+hydrateFreeEmailDomains();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
