@@ -2,7 +2,7 @@
 
 A web-based demonstrator for CandyVoice's noise filtering and voice-processing features. The web interface talks to a Python API over REST, which in turn relays commands to a separate Windows application that performs the actual audio processing.
 
-🔗 **Live demo:** [demo.candyvoice.com](https://demo.candyvoice.com)
+🔗 **Live demo:** [candyvoice.web.app](https://candyvoice.web.app)
 
 ## Architecture
 
@@ -124,14 +124,14 @@ CandyvoiceDemo/
 
 ## Custom domain & email deliverability
 
-The app is served at [demo.candyvoice.com](https://demo.candyvoice.com), connected as a custom domain under Firebase Hosting.
+The app is served at [candyvoice.web.app](https://candyvoice.web.app), connected as a custom domain under Firebase Hosting.
 
 Firebase Authentication is configured to send emails (verification, password reset, etc.) through **SMTP2GO** rather than Firebase's default sender, using `candyvoice.com` as the sending domain. To keep those emails out of spam and avoid them being silently dropped by strict corporate mail filters, the domain has:
 
 - **SPF** — authorizes SMTP2GO's sending servers
 - **DKIM** — SMTP2GO signs outgoing mail with a `candyvoice.com`-aligned key
 - **DMARC** — published at `_dmarc.candyvoice.com`, currently at `p=none` while aggregate reports are monitored
-- **A custom Auth email domain** — verified via Firebase's *Templates → Customize domain* flow, so email action links point to `demo.candyvoice.com/__/auth/action` instead of the default `*.firebaseapp.com` / `*.web.app` domains (which some spam filters flag as a phishing signal)
+- **A custom Auth email domain** — verified via Firebase's *Templates → Customize domain* flow, so email action links point to `candyvoice.web.app/__/auth/action` instead of the default `*.firebaseapp.com` / `*.web.app` domains (which some spam filters flag as a phishing signal)
 
 If you fork this project and want to reuse the same setup, you'll need to repeat the SPF/DKIM/DMARC and Firebase custom-domain verification steps for your own domain.
 
