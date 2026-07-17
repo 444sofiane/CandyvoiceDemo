@@ -17,7 +17,6 @@ import {
   subscribeUsage,
   getRemainingMinutes,
   hasQuotaFor,
-  recordUsage,
   USAGE_QUOTA_MINUTES,
 } from './usage-client.js';
 
@@ -318,9 +317,29 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (!auth.currentUser) {
+      setMessage('Your session has expired — please sign in again.', true);
+      setStatus('idle');
+      filterBtn.disabled = false;
+      filterBtn.textContent = 'Apply Noise Filter';
+      return;
+    }
+
     progressBar.style.width = '35%';
     setMessage('Sending the file to the API…');
     console.log('Using API endpoint:', apiUrl);
+
+    let idToken;
+    try {
+      idToken = await auth.currentUser.getIdToken();
+    } catch (error) {
+      console.error('Failed to get ID token:', error);
+      setMessage('Could not verify your session. Please sign in again.', true);
+      setStatus('idle');
+      filterBtn.disabled = false;
+      filterBtn.textContent = 'Apply Noise Filter';
+      return;
+    }
 
     try {
       const response = await fetch(apiUrl, {
@@ -329,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/octet-stream',
           'X-File-Name': fileToUpload.name,
           'X-Output-Name': fileToUpload.name.replace(/\.[^.]+$/u, '_filtered.wav'),
+          Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,
       });
@@ -359,25 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         spectrogramBlock.classList.remove('d-none');
         spectrogramController.refreshResult();
-
-        if (auth.currentUser) {
-          try {
-            await recordUsage(minutesNeeded);
-          } catch (error) {
-            console.error('Failed to record usage:', error);
-            if (error.code === 'functions/resource-exhausted') {
-              setMessage(
-                "Filtered — but your account's quota is now used up, so this won't count until you contact us. Result is still available below.",
-                true,
-              );
-            } else {
-              setMessage(
-                'Filtered — but we could not update your usage total right now. Contact support if this persists.',
-                true,
-              );
-            }
-          }
-        }
       }
 
       filterBtn.textContent = 'Filtered';
