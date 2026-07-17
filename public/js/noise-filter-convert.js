@@ -66,6 +66,11 @@ export function audioBufferToWavBlob(audioBuffer) {
  * @returns {Promise<File>}
  */
 export async function convertFileToWav(file, { onProgress } = {}) {
+  const isWavFile = file.type === 'audio/wav' || /\.wav$/i.test(file.name);
+  if (isWavFile) {
+    return file;
+  }
+
   const arrayBuffer = await file.arrayBuffer();
 
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
