@@ -1,21 +1,13 @@
+let freeEmailDomainsPromise = null;
 
-const EMAIL_DOMAINS_URL = new URL('../assets/public_email_domains-ALL.txt', import.meta.url);
-
-async function loadFreeEmailDomains() {
-  const response = await fetch(EMAIL_DOMAINS_URL);
-
-  if (!response.ok) {
-    throw new Error(`Failed to load free email domains: ${response.status} ${response.statusText}`);
+function getFreeEmailDomains() {
+  if (!freeEmailDomainsPromise) {
+    freeEmailDomainsPromise = fetch(EMAIL_DOMAINS_URL)
+      .then((r) => r.text())
+      .then((text) => new Set(text.split(/\r?\n/).map((d) => d.trim().toLowerCase()).filter(Boolean)));
   }
-
-  const text = await response.text();
-  return text
-    .split(/\r?\n/)
-    .map((domain) => domain.trim().toLowerCase())
-    .filter(Boolean);
+  return freeEmailDomainsPromise;
 }
-
-const FREE_EMAIL_DOMAINS = new Set(await loadFreeEmailDomains());
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,7 +20,8 @@ export function getEmailDomain(email) {
   return parts.length === 2 ? parts[1] : null;
 }
 
-export function checkProfessionalEmail(email) {
+export async function checkProfessionalEmail(email) {
+  const domains = await getFreeEmailDomains();
   const trimmed = email.trim();
 
   if (!trimmed) {
@@ -39,7 +32,7 @@ export function checkProfessionalEmail(email) {
   }
 
   const domain = getEmailDomain(trimmed);
-  if (FREE_EMAIL_DOMAINS.has(domain)) {
+  if (domains.has(domain)) {
     return { valid: false, reason: `${domain} is a personal email provider — please use your work email.` };
   }
 
