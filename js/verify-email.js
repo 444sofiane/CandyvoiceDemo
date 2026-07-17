@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
       return;
     }
 
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     signOutBtn.addEventListener('click', async () => {
       await signOut(auth);
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     });
   });
 });

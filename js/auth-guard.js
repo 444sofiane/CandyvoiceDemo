@@ -10,7 +10,7 @@ document.documentElement.style.visibility = 'hidden';
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
     return;
   }
 
@@ -80,7 +80,7 @@ function setupUserMenu(user) {
 
   signOutBtn.addEventListener('click', async () => {
     await signOut(auth);
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
   });
 }
 
