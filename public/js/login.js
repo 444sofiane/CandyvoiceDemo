@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { auth } from './firebase-init.js';
-import { checkProfessionalEmail } from './email-check.js';
+import { isValidEmailFormat } from './email-check.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
@@ -53,9 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let hasError = false;
 
-    const emailCheck = checkProfessionalEmail(emailInput.value);
-    if (!emailCheck.valid) {
-      showFieldError(emailInput, emailError, emailCheck.reason);
+    const trimmedEmail = emailInput.value.trim();
+    if (!trimmedEmail) {
+      showFieldError(emailInput, emailError, 'Enter your email.');
+      hasError = true;
+    } else if (!isValidEmailFormat(trimmedEmail)) {
+      showFieldError(emailInput, emailError, 'Enter a valid email address.');
       hasError = true;
     } else {
       clearFieldError(emailInput, emailError);
@@ -78,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setFormMessage('Checking your details…');
 
     try {
-      const credential = await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
+      const credential = await signInWithEmailAndPassword(auth, trimmedEmail, passwordInput.value);
       setFormMessage('Signed in — redirecting…', 'success');
       window.location.href = credential.user.emailVerified ? 'noisefilter.html' : 'verify-email.html';
     } catch (error) {
