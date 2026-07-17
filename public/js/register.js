@@ -3,8 +3,11 @@ import { auth } from './firebase-init.js';
 import { checkProfessionalEmail } from './email-check.js';
 
 const MIN_PASSWORD_LENGTH = 6;
+const REGISTER_DEBUG_PREFIX = '[register]';
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.info(`${REGISTER_DEBUG_PREFIX} script loaded`);
+
   const form = document.getElementById('registerForm');
   const emailInput = document.getElementById('emailInput');
   const passwordInput = document.getElementById('passwordInput');
@@ -14,6 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmPasswordError = document.getElementById('confirmPasswordError');
   const formMessage = document.getElementById('formMessage');
   const registerBtn = document.getElementById('registerBtn');
+
+  console.info(`${REGISTER_DEBUG_PREFIX} dom ready`, {
+    hasForm: Boolean(form),
+    hasEmailInput: Boolean(emailInput),
+    hasPasswordInput: Boolean(passwordInput),
+    hasConfirmPasswordInput: Boolean(confirmPasswordInput),
+    hasRegisterBtn: Boolean(registerBtn),
+  });
 
   function showFieldError(input, errorEl, message) {
     input.classList.add('is-invalid');
@@ -55,12 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   form.addEventListener('submit', async (e) => {
+    console.info(`${REGISTER_DEBUG_PREFIX} submit start`);
     e.preventDefault();
     setFormMessage('');
 
     let hasError = false;
+    const trimmedEmail = emailInput.value.trim();
+
+    console.info(`${REGISTER_DEBUG_PREFIX} validate inputs`, {
+      email: trimmedEmail,
+      passwordLength: passwordInput.value.length,
+      confirmPasswordLength: confirmPasswordInput.value.length,
+    });
 
     const emailCheck = await Promise.resolve(checkProfessionalEmail(emailInput.value));
+    console.info(`${REGISTER_DEBUG_PREFIX} email check result`, emailCheck);
     if (!emailCheck?.valid) {
       showFieldError(emailInput, emailError, emailCheck?.reason || 'Enter a valid work email address.');
       hasError = true;
@@ -89,20 +109,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (hasError) {
+      console.warn(`${REGISTER_DEBUG_PREFIX} validation failed`, {
+        emailInvalid: emailInput.classList.contains('is-invalid'),
+        passwordInvalid: passwordInput.classList.contains('is-invalid'),
+        confirmPasswordInvalid: confirmPasswordInput.classList.contains('is-invalid'),
+      });
       const firstInvalid = [emailInput, passwordInput, confirmPasswordInput].find((el) => el.classList.contains('is-invalid'));
       if (firstInvalid) firstInvalid.focus();
       return;
     }
 
+    console.info(`${REGISTER_DEBUG_PREFIX} validation passed`);
     registerBtn.disabled = true;
     registerBtn.textContent = 'Creating account…';
     setFormMessage('Setting up your account…');
 
     let credential;
     try {
-      credential = await createUserWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
+      console.info(`${REGISTER_DEBUG_PREFIX} creating firebase user`, { email: trimmedEmail });
+      credential = await createUserWithEmailAndPassword(auth, trimmedEmail, passwordInput.value);
+      console.info(`${REGISTER_DEBUG_PREFIX} firebase user created`, {
+        uid: credential?.user?.uid,
+        emailVerified: credential?.user?.emailVerified,
+      });
     } catch (error) {
-      console.error(error);
+      console.error(`${REGISTER_DEBUG_PREFIX} createUserWithEmailAndPassword failed`, {
+        code: error?.code,
+        message: error?.message,
+        error,
+      });
       setFormMessage(friendlyAuthError(error), 'error');
       registerBtn.disabled = false;
       registerBtn.textContent = 'Create account';
@@ -110,11 +145,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      console.info(`${REGISTER_DEBUG_PREFIX} sending verification email`);
       await sendEmailVerification(credential.user);
+      console.info(`${REGISTER_DEBUG_PREFIX} verification email sent`);
     } catch (error) {
-      console.error('Account was created, but sending the verification email failed:', error);
+      console.error(`${REGISTER_DEBUG_PREFIX} verification email failed`, {
+        code: error?.code,
+        message: error?.message,
+        error,
+      });
     }
 
+    console.info(`${REGISTER_DEBUG_PREFIX} redirecting to verify-email.html`);
     setFormMessage('Account created — check your inbox to verify your email…', 'success');
     window.location.href = 'verify-email.html';
   });
