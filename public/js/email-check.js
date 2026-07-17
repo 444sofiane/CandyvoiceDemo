@@ -1,3 +1,4 @@
+const EMAIL_DOMAINS_URL = new URL('../assets/public_email_domains-ALL.txt', import.meta.url);
 let freeEmailDomainsPromise = null;
 
 function getFreeEmailDomains() {
@@ -8,6 +9,22 @@ function getFreeEmailDomains() {
   }
   return freeEmailDomainsPromise;
 }
+
+async function loadFreeEmailDomains() {
+  const response = await fetch(EMAIL_DOMAINS_URL);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load free email domains: ${response.status} ${response.statusText}`);
+  }
+
+  const text = await response.text();
+  return text
+    .split(/\r?\n/)
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+const FREE_EMAIL_DOMAINS = new Set(await loadFreeEmailDomains());
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
