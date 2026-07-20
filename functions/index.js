@@ -45,6 +45,83 @@ const FEATURE_CLICK_PROPERTIES = {
 };
 
 const HUBSPOT_CONTACT_PROPERTY_DEFINITIONS = {
+  signup_date: {
+    groupName: 'contactinformation',
+    name: 'signup_date',
+    label: 'Signup date',
+    type: 'date',
+    fieldType: 'date',
+  },
+  email_verified: {
+    groupName: 'contactinformation',
+    name: 'email_verified',
+    label: 'Email verified',
+    type: 'bool',
+    fieldType: 'booleancheckbox',
+  },
+  minutes_used: {
+    groupName: 'contactinformation',
+    name: 'minutes_used',
+    label: 'Minutes used',
+    type: 'number',
+    fieldType: 'number',
+  },
+  firebase_uid: {
+    groupName: 'contactinformation',
+    name: 'firebase_uid',
+    label: 'Firebase UID',
+    type: 'string',
+    fieldType: 'text',
+  },
+  last_feature_clicked: {
+    groupName: 'contactinformation',
+    name: 'last_feature_clicked',
+    label: 'Last feature clicked',
+    type: 'string',
+    fieldType: 'text',
+  },
+  last_feature_clicked_at: {
+    groupName: 'contactinformation',
+    name: 'last_feature_clicked_at',
+    label: 'Last feature clicked at',
+    type: 'date',
+    fieldType: 'date',
+  },
+  favorite_feature: {
+    groupName: 'contactinformation',
+    name: 'favorite_feature',
+    label: 'Favorite feature',
+    type: 'string',
+    fieldType: 'text',
+  },
+  favorite_feature_updated_at: {
+    groupName: 'contactinformation',
+    name: 'favorite_feature_updated_at',
+    label: 'Favorite feature updated at',
+    type: 'date',
+    fieldType: 'date',
+  },
+  feature_clicks_deepfake: {
+    groupName: 'contactinformation',
+    name: 'feature_clicks_deepfake',
+    label: 'Feature clicks deepfake',
+    type: 'number',
+    fieldType: 'number',
+  },
+  feature_clicks_imitation: {
+    groupName: 'contactinformation',
+    name: 'feature_clicks_imitation',
+    label: 'Feature clicks imitation',
+    type: 'number',
+    fieldType: 'number',
+  },
+  feature_clicks_noizeoff: {
+    groupName: 'contactinformation',
+    name: 'feature_clicks_noizeoff',
+    label: 'Feature clicks noizeoff',
+    type: 'number',
+    fieldType: 'number',
+  },
   email_verified_date: {
     groupName: 'contactinformation',
     name: 'email_verified_date',
@@ -101,6 +178,21 @@ async function ensureHubspotContactProperty(propertyName) {
       }
     }
   }
+}
+
+async function ensureHubspotContactProperties(propertyNames) {
+  const uniquePropertyNames = [...new Set(propertyNames)].filter(Boolean);
+  for (const propertyName of uniquePropertyNames) {
+    await ensureHubspotContactProperty(propertyName);
+  }
+}
+
+function normalizeClickCounts(clickCounts = {}) {
+  return {
+    deepfake: Number(clickCounts.deepfake || 0),
+    imitation: Number(clickCounts.imitation || 0),
+    noizeoff: Number(clickCounts.noizeoff || 0),
+  };
 }
 
 function getFavoriteFeature(clickCounts) {
@@ -166,32 +258,42 @@ exports.trackFeatureInterest = onRequest(
       return;
     }
 
+    await ensureHubspotContactProperties([
+      'firebase_uid',
+      'last_feature_clicked',
+      'last_feature_clicked_at',
+      'favorite_feature',
+      'favorite_feature_updated_at',
+      'feature_clicks_deepfake',
+      'feature_clicks_imitation',
+      'feature_clicks_noizeoff',
+    ]);
+
     const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`;
     const currentProps = FEATURE_CLICK_PROPERTIES[featureKey];
 
-    let clickCounts = {
-      deepfake: 0,
-      imitation: 0,
-      noizeoff: 0,
-    };
+    const featureUsageRef = db.collection('feature_usage').doc(decodedToken.uid);
+    const clickCounts = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(featureUsageRef);
+      const storedCounts = normalizeClickCounts(snap.exists ? snap.data()?.clickCounts : {});
+      storedCounts[featureKey] += 1;
 
-    try {
-      const existing = await axios.get(contactUrl, { headers: HUBSPOT_HEADERS() });
-      const properties = existing.data?.properties || {};
-      clickCounts = {
-        deepfake: Number(properties.feature_clicks_deepfake || 0),
-        imitation: Number(properties.feature_clicks_imitation || 0),
-        noizeoff: Number(properties.feature_clicks_noizeoff || 0),
-      };
-    } catch (error) {
-      if (error.response?.status !== 404) {
-        console.error('HubSpot feature lookup failed:', error.response?.data || error.message);
-        response.status(502).json({ error: 'Could not read HubSpot contact' });
-        return;
-      }
-    }
+      tx.set(
+        featureUsageRef,
+        {
+          uid: decodedToken.uid,
+          email: user.email,
+          clickCounts: storedCounts,
+          lastFeatureKey: featureKey,
+          last_feature_clicked: currentProps.label,
+          favorite_feature: getFavoriteFeature(storedCounts),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
 
-    clickCounts[featureKey] += 1;
+      return storedCounts;
+    });
 
     const properties = {
       email: user.email,
@@ -257,13 +359,14 @@ exports.onUserCreated = functionsV1
     if (!user.email) return;
 
     try {
+      await ensureHubspotContactProperties(['signup_date', 'email_verified', 'minutes_used']);
       await axios.post(
         'https://api.hubapi.com/crm/v3/objects/contacts',
         {
           properties: {
             email: user.email,
             firebase_uid: user.uid,
-            signup_date: new Date(user.metadata.creationTime).toISOString(),
+            signup_date: toHubspotDateOnly(new Date(user.metadata.creationTime)),
             minutes_used: 0,
             email_verified: false,
           },
@@ -309,7 +412,7 @@ exports.confirmEmailVerified = onCall(
     }
 
     try {
-      await ensureHubspotContactProperty('email_verified_date');
+      await ensureHubspotContactProperties(['email_verified', 'email_verified_date']);
       await axios.patch(
         `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`,
         {
@@ -402,6 +505,7 @@ exports.syncUsageTotalToHubspot = onDocumentWritten(
     if (!email) return;
 
     try {
+      await ensureHubspotContactProperty('minutes_used');
       await axios.patch(
         `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`,
         { properties: { minutes_used: minutesUsed } },
