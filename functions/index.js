@@ -44,6 +44,16 @@ const FEATURE_CLICK_PROPERTIES = {
   },
 };
 
+const HUBSPOT_CONTACT_PROPERTY_DEFINITIONS = {
+  email_verified_date: {
+    groupName: 'contactinformation',
+    name: 'email_verified_date',
+    label: 'Email verified date',
+    type: 'date',
+    fieldType: 'date',
+  },
+};
+
 function normalizeFeatureName(value) {
   const normalized = String(value || '').trim().toLowerCase();
   if (!normalized) return null;
@@ -63,6 +73,34 @@ function normalizeFeatureName(value) {
  */
 function toHubspotDateOnly(date = new Date()) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+async function ensureHubspotContactProperty(propertyName) {
+  const definition = HUBSPOT_CONTACT_PROPERTY_DEFINITIONS[propertyName];
+  if (!definition) return;
+
+  const propertyUrl = `https://api.hubapi.com/crm/v3/properties/contacts/${encodeURIComponent(propertyName)}`;
+
+  try {
+    await axios.get(propertyUrl, { headers: HUBSPOT_HEADERS() });
+  } catch (error) {
+    if (error.response?.status !== 404) {
+      throw error;
+    }
+
+    try {
+      await axios.post(
+        'https://api.hubapi.com/crm/v3/properties/contacts',
+        definition,
+        { headers: HUBSPOT_HEADERS() },
+      );
+      console.log(`Created missing HubSpot contact property: ${propertyName}`);
+    } catch (createError) {
+      if (createError.response?.status !== 409) {
+        throw createError;
+      }
+    }
+  }
 }
 
 function getFavoriteFeature(clickCounts) {
@@ -271,12 +309,13 @@ exports.confirmEmailVerified = onCall(
     }
 
     try {
+      await ensureHubspotContactProperty('email_verified_date');
       await axios.patch(
         `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`,
         {
           properties: {
             email_verified: true,
-            email_verified_date: new Date().toISOString(),
+            email_verified_date: toHubspotDateOnly(),
           },
         },
         { headers: HUBSPOT_HEADERS() },
