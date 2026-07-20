@@ -5,6 +5,7 @@ import { getCachedUsageMinutes, subscribeUsage, formatQuota, USAGE_QUOTA_MINUTES
 import { syncEmailVerifiedStatus } from './hubspot-verification-sync.js';
 
 const featureInterestEndpoint = `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/trackFeatureInterest`;
+const pendingFeatureInterestStorageKey = 'cv-pending-feature-interests';
 
 document.documentElement.style.visibility = 'hidden';
 
@@ -22,6 +23,7 @@ onAuthStateChanged(auth, (user) => {
   document.documentElement.style.visibility = 'visible';
   setupUserMenu(user);
   setupFeatureInterestTracking(user);
+  void flushPendingFeatureInterests(user);
 
   // Defensive re-sync: covers a verified user landing here without ever
   // clicking "I've verified" on verify-email.html (e.g. verified in another
@@ -84,15 +86,6 @@ function setupUserMenu(user) {
   });
 }
 
-// Upper bound on how long we'll hold the navigation open for the feature
-// interest ping to complete. This request needs a CORS preflight (custom
-// Authorization header + JSON body), and `keepalive: true` alone doesn't
-// reliably carry a preflighted request through a document teardown — the
-// OPTIONS can succeed while the real POST never fires. Waiting (briefly)
-// before navigating is what actually guarantees delivery; the timeout just
-// makes sure a slow/broken network can't trap the user on the page.
-const FEATURE_INTEREST_NAV_TIMEOUT_MS = 800;
-
 function setupFeatureInterestTracking(user) {
   const featureLinks = Array.from(document.querySelectorAll('.cv-feature-link'));
   if (!featureLinks.length) return;
@@ -116,13 +109,55 @@ async function handleFeatureLinkClick(event, link, user) {
   const feature = featureFromLink(link);
 
   if (feature) {
-    await Promise.race([
-      sendFeatureInterest(user, feature),
-      new Promise((resolve) => setTimeout(resolve, FEATURE_INTEREST_NAV_TIMEOUT_MS)),
-    ]);
+    queueFeatureInterest(feature);
   }
 
   window.location.href = destination;
+}
+
+function queueFeatureInterest(feature) {
+  const pending = readPendingFeatureInterests();
+  pending.push({
+    feature,
+    queuedAt: Date.now(),
+  });
+  sessionStorage.setItem(pendingFeatureInterestStorageKey, JSON.stringify(pending));
+}
+
+function readPendingFeatureInterests() {
+  try {
+    const stored = sessionStorage.getItem(pendingFeatureInterestStorageKey);
+    const parsed = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed.filter((entry) => entry && typeof entry.feature === 'string') : [];
+  } catch (error) {
+    console.warn('Could not read pending feature interests:', error);
+    return [];
+  }
+}
+
+function storePendingFeatureInterests(pending) {
+  if (!pending.length) {
+    sessionStorage.removeItem(pendingFeatureInterestStorageKey);
+    return;
+  }
+
+  sessionStorage.setItem(pendingFeatureInterestStorageKey, JSON.stringify(pending));
+}
+
+async function flushPendingFeatureInterests(user) {
+  const pending = readPendingFeatureInterests();
+  if (!pending.length) return;
+
+  const remaining = [];
+
+  for (const entry of pending) {
+    const sent = await sendFeatureInterest(user, entry.feature);
+    if (!sent) {
+      remaining.push(entry);
+    }
+  }
+
+  storePendingFeatureInterests(remaining);
 }
 
 function featureFromLink(link) {
@@ -136,7 +171,7 @@ function featureFromLink(link) {
 async function sendFeatureInterest(user, feature) {
   try {
     const token = await user.getIdToken();
-    await fetch(featureInterestEndpoint, {
+    const response = await fetch(featureInterestEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,7 +180,16 @@ async function sendFeatureInterest(user, feature) {
       body: JSON.stringify({ feature }),
       keepalive: true,
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn('Feature interest tracking failed:', response.status, errorText);
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.warn('Feature interest tracking failed:', error);
+    return false;
   }
 }
