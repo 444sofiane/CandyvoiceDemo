@@ -57,7 +57,7 @@ const HUBSPOT_CONTACT_PROPERTY_DEFINITIONS = {
     name: 'email_verified',
     label: 'Email verified',
     type: 'bool',
-    fieldType: 'booleancheckbox',
+    fieldType: 'booleancheckbox', 
   },
   minutes_used: {
     groupName: 'contactinformation',
@@ -129,6 +129,48 @@ const HUBSPOT_CONTACT_PROPERTY_DEFINITIONS = {
     type: 'date',
     fieldType: 'date',
   },
+  last_seen_at: {
+    groupName: 'contactinformation',
+    name: 'last_seen_at',
+    label: 'Last seen at',
+    type: 'datetime',
+    fieldType: 'date',
+  },
+  acquisition_source: {
+    groupName: 'contactinformation',
+    name: 'acquisition_source',
+    label: 'Acquisition source',
+    type: 'string',
+    fieldType: 'text',
+  },
+  browser_locale: {
+    groupName: 'contactinformation',
+    name: 'browser_locale',
+    label: 'Browser locale',
+    type: 'string',
+    fieldType: 'text',
+  },
+  browser_timezone: {
+    groupName: 'contactinformation',
+    name: 'browser_timezone',
+    label: 'Browser timezone',
+    type: 'string',
+    fieldType: 'text',
+  },
+  total_feature_clicks: {
+    groupName: 'contactinformation',
+    name: 'total_feature_clicks',
+    label: 'Total feature clicks',
+    type: 'number',
+    fieldType: 'number',
+  },
+  last_active_feature: {
+    groupName: 'contactinformation',
+    name: 'last_active_feature',
+    label: 'Last active feature',
+    type: 'string',
+    fieldType: 'text',
+  },
 };
 
 function normalizeFeatureName(value) {
@@ -150,6 +192,10 @@ function normalizeFeatureName(value) {
  */
 function toHubspotDateOnly(date = new Date()) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function toHubspotDateTime(date = new Date()) {
+  return date.toISOString();
 }
 
 async function ensureHubspotContactProperty(propertyName) {
@@ -193,6 +239,11 @@ function normalizeClickCounts(clickCounts = {}) {
     imitation: Number(clickCounts.imitation || 0),
     noizeoff: Number(clickCounts.noizeoff || 0),
   };
+}
+
+function normalizeTextValue(value, fallback = '') {
+  const normalized = String(value || '').trim();
+  return normalized || fallback;
 }
 
 function getFavoriteFeature(clickCounts) {
@@ -267,6 +318,8 @@ exports.trackFeatureInterest = onRequest(
       'feature_clicks_deepfake',
       'feature_clicks_imitation',
       'feature_clicks_noizeoff',
+      'total_feature_clicks',
+      'last_active_feature',
     ]);
 
     const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`;
@@ -276,6 +329,7 @@ exports.trackFeatureInterest = onRequest(
     const clickCounts = await db.runTransaction(async (tx) => {
       const snap = await tx.get(featureUsageRef);
       const storedCounts = normalizeClickCounts(snap.exists ? snap.data()?.clickCounts : {});
+      const totalFeatureClicks = Number(snap.exists ? snap.data()?.totalFeatureClicks || 0 : 0);
       storedCounts[featureKey] += 1;
 
       tx.set(
@@ -284,6 +338,7 @@ exports.trackFeatureInterest = onRequest(
           uid: decodedToken.uid,
           email: user.email,
           clickCounts: storedCounts,
+          totalFeatureClicks: totalFeatureClicks + 1,
           lastFeatureKey: featureKey,
           last_feature_clicked: currentProps.label,
           favorite_feature: getFavoriteFeature(storedCounts),
@@ -303,6 +358,8 @@ exports.trackFeatureInterest = onRequest(
       last_feature_clicked_at: toHubspotDateOnly(),
       favorite_feature: getFavoriteFeature(clickCounts),
       favorite_feature_updated_at: toHubspotDateOnly(),
+      total_feature_clicks: Object.values(clickCounts).reduce((sum, count) => sum + Number(count || 0), 0),
+      last_active_feature: currentProps.label,
     };
 
     try {
@@ -359,7 +416,13 @@ exports.onUserCreated = functionsV1
     if (!user.email) return;
 
     try {
-      await ensureHubspotContactProperties(['signup_date', 'email_verified', 'minutes_used']);
+      await ensureHubspotContactProperties([
+        'signup_date',
+        'email_verified',
+        'minutes_used',
+        'acquisition_source',
+        'last_seen_at',
+      ]);
       await axios.post(
         'https://api.hubapi.com/crm/v3/objects/contacts',
         {
@@ -369,6 +432,8 @@ exports.onUserCreated = functionsV1
             signup_date: toHubspotDateOnly(new Date(user.metadata.creationTime)),
             minutes_used: 0,
             email_verified: false,
+            acquisition_source: 'registration',
+            last_seen_at: toHubspotDateTime(new Date(user.metadata.creationTime)),
           },
         },
         { headers: HUBSPOT_HEADERS() },
@@ -429,6 +494,56 @@ exports.confirmEmailVerified = onCall(
       // The user genuinely is verified even if the HubSpot write failed —
       // don't turn a HubSpot hiccup into a client-side error.
       return { emailVerified: true, synced: false };
+    }
+  },
+);
+
+/**
+ * Lightweight profile sync from the authenticated frontend. Updates contact
+ * metadata such as last_seen_at, browser locale, timezone, and acquisition
+ * source without touching usage counters.
+ */
+exports.syncContactProfile = onCall(
+  { secrets: ['HUBSPOT_TOKEN'], serviceAccount: SERVICE_ACCOUNT },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const user = await auth.getUser(request.auth.uid);
+    if (!user.email) {
+      return { synced: false };
+    }
+
+    const acquisitionSource = normalizeTextValue(request.data?.acquisitionSource, 'direct');
+    const browserLocale = normalizeTextValue(request.data?.browserLocale);
+    const browserTimezone = normalizeTextValue(request.data?.browserTimezone);
+
+    try {
+      await ensureHubspotContactProperties([
+        'last_seen_at',
+        'acquisition_source',
+        'browser_locale',
+        'browser_timezone',
+      ]);
+
+      await axios.patch(
+        `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`,
+        {
+          properties: {
+            last_seen_at: toHubspotDateTime(),
+            acquisition_source: acquisitionSource,
+            browser_locale: browserLocale,
+            browser_timezone: browserTimezone,
+          },
+        },
+        { headers: HUBSPOT_HEADERS() },
+      );
+
+      return { synced: true };
+    } catch (error) {
+      console.error('HubSpot profile sync failed:', error.response?.data || error.message);
+      return { synced: false };
     }
   },
 );

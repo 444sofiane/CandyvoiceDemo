@@ -3,6 +3,8 @@ import { auth } from './firebase-init.js';
 import { firebaseConfig } from './firebase-config.js';
 import { getCachedUsageMinutes, subscribeUsage, formatQuota, USAGE_QUOTA_MINUTES } from './usage-client.js';
 import { syncEmailVerifiedStatus } from './hubspot-verification-sync.js';
+import { captureAcquisitionSource, getAcquisitionSource, getBrowserLocale, getBrowserTimezone } from './contact-context.js';
+import { syncContactProfile } from './contact-profile-sync.js';
 
 const featureInterestEndpoint = `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/trackFeatureInterest`;
 const pendingFeatureInterestStorageKey = 'cv-pending-feature-interests';
@@ -21,9 +23,15 @@ onAuthStateChanged(auth, (user) => {
   }
 
   document.documentElement.style.visibility = 'visible';
+  captureAcquisitionSource();
   setupUserMenu(user);
   setupFeatureInterestTracking(user);
   void flushPendingFeatureInterests(user);
+  void syncContactProfile(user, {
+    acquisitionSource: getAcquisitionSource(),
+    browserLocale: getBrowserLocale(),
+    browserTimezone: getBrowserTimezone(),
+  });
 
   // Defensive re-sync: covers a verified user landing here without ever
   // clicking "I've verified" on verify-email.html (e.g. verified in another

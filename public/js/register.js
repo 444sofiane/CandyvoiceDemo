@@ -1,12 +1,14 @@
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { auth } from './firebase-init.js';
 import { checkProfessionalEmail } from './email-check.js';
+import { captureAcquisitionSource } from './contact-context.js';
 
 const MIN_PASSWORD_LENGTH = 6;
 const REGISTER_DEBUG_PREFIX = '[register]';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.info(`${REGISTER_DEBUG_PREFIX} script loaded`);
+  captureAcquisitionSource();
 
   const form = document.getElementById('registerForm');
   const emailInput = document.getElementById('emailInput');
