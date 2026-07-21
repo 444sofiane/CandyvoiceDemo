@@ -14,5 +14,27 @@ service cloud.firestore {
       // only blocks someone editing the value directly from dev tools.
       allow write: if false;
     }
+
+    // userProfiles/{uid} — one doc per user, written once at registration
+    // (see register.js) with the name/company collected on signup. A
+    // Cloud Function (syncUserProfileToHubspot) listens for writes here
+    // and pushes firstname/lastname/company to the matching HubSpot
+    // contact. Kept as a create-only doc: nothing in the app currently
+    // needs to edit this after signup, so update/delete are blocked to
+    // keep the data trustworthy as a one-time registration record.
+    match /userProfiles/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'company', 'email', 'createdAt'])
+        && request.resource.data.firstName is string && request.resource.data.firstName.size() > 0
+        && request.resource.data.lastName is string && request.resource.data.lastName.size() > 0
+        && request.resource.data.company is string && request.resource.data.company.size() > 0
+        && request.resource.data.email == request.auth.token.email;
+
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }

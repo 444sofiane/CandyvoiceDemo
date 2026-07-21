@@ -8,8 +8,6 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="icon" type="image/png" href="image/image.png">
-<link rel="apple-touch-icon" href="image/image.png">
 <link rel="stylesheet" href="css/noisefilter.css">
 <link rel="stylesheet" href="css/login.css">
 
@@ -37,9 +35,10 @@
       <p class="lead mb-4">Set up your CandyVoice account with your work email. We keep the Noise Filter to professional accounts, so personal inboxes like Gmail or Yahoo won't get through.</p>
 
       <ul class="list-unstyled cv-side-list">
-        <li><span class="dot">1</span><span>Enter your work email and choose a password.</span></li>
-        <li><span class="dot">2</span><span>We check it's a professional address, not a personal inbox.</span></li>
-        <li><span class="dot">3</span><span>You're signed in and dropped straight into the Noise Filter.</span></li>
+        <li><span class="dot">1</span><span>Tell us who you are and where you work.</span></li>
+        <li><span class="dot">2</span><span>Enter your work email and choose a password.</span></li>
+        <li><span class="dot">3</span><span>We check it's a professional address, not a personal inbox.</span></li>
+        <li><span class="dot">4</span><span>You're signed in and dropped straight into the Noise Filter.</span></li>
       </ul>
     </div>
 
@@ -49,6 +48,29 @@
         <form id="registerForm" novalidate>
 
           <h3 class="mb-3">Create your account</h3>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="cv-field mb-3">
+                <label for="firstNameInput" class="cv-label">First name</label>
+                <input type="text" class="cv-input" id="firstNameInput" placeholder="Jane" autocomplete="given-name" required>
+                <p class="cv-field-error d-none" id="firstNameError"></p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="cv-field mb-3">
+                <label for="lastNameInput" class="cv-label">Last name</label>
+                <input type="text" class="cv-input" id="lastNameInput" placeholder="Doe" autocomplete="family-name" required>
+                <p class="cv-field-error d-none" id="lastNameError"></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="cv-field mb-3">
+            <label for="companyInput" class="cv-label">Company name</label>
+            <input type="text" class="cv-input" id="companyInput" placeholder="Acme Inc." autocomplete="organization" required>
+            <p class="cv-field-error d-none" id="companyError"></p>
+          </div>
 
           <div class="cv-field mb-3">
             <label for="emailInput" class="cv-label">Work email</label>

@@ -1,19 +1,24 @@
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { auth } from './firebase-init.js';
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { auth, db } from './firebase-init.js';
 import { checkProfessionalEmail } from './email-check.js';
-import { captureAcquisitionSource } from './contact-context.js';
 
 const MIN_PASSWORD_LENGTH = 6;
 const REGISTER_DEBUG_PREFIX = '[register]';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.info(`${REGISTER_DEBUG_PREFIX} script loaded`);
-  captureAcquisitionSource();
 
   const form = document.getElementById('registerForm');
+  const firstNameInput = document.getElementById('firstNameInput');
+  const lastNameInput = document.getElementById('lastNameInput');
+  const companyInput = document.getElementById('companyInput');
   const emailInput = document.getElementById('emailInput');
   const passwordInput = document.getElementById('passwordInput');
   const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+  const firstNameError = document.getElementById('firstNameError');
+  const lastNameError = document.getElementById('lastNameError');
+  const companyError = document.getElementById('companyError');
   const emailError = document.getElementById('emailError');
   const passwordError = document.getElementById('passwordError');
   const confirmPasswordError = document.getElementById('confirmPasswordError');
@@ -22,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.info(`${REGISTER_DEBUG_PREFIX} dom ready`, {
     hasForm: Boolean(form),
+    hasFirstNameInput: Boolean(firstNameInput),
+    hasLastNameInput: Boolean(lastNameInput),
+    hasCompanyInput: Boolean(companyInput),
     hasEmailInput: Boolean(emailInput),
     hasPasswordInput: Boolean(passwordInput),
     hasConfirmPasswordInput: Boolean(confirmPasswordInput),
@@ -47,6 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   [
+    [firstNameInput, firstNameError],
+    [lastNameInput, lastNameError],
+    [companyInput, companyError],
     [emailInput, emailError],
     [passwordInput, passwordError],
     [confirmPasswordInput, confirmPasswordError],
@@ -73,13 +84,40 @@ document.addEventListener('DOMContentLoaded', () => {
     setFormMessage('');
 
     let hasError = false;
+    const trimmedFirstName = firstNameInput.value.trim();
+    const trimmedLastName = lastNameInput.value.trim();
+    const trimmedCompany = companyInput.value.trim();
     const trimmedEmail = emailInput.value.trim();
 
     console.info(`${REGISTER_DEBUG_PREFIX} validate inputs`, {
+      firstName: trimmedFirstName,
+      lastName: trimmedLastName,
+      company: trimmedCompany,
       email: trimmedEmail,
       passwordLength: passwordInput.value.length,
       confirmPasswordLength: confirmPasswordInput.value.length,
     });
+
+    if (!trimmedFirstName) {
+      showFieldError(firstNameInput, firstNameError, 'Enter your first name.');
+      hasError = true;
+    } else {
+      clearFieldError(firstNameInput, firstNameError);
+    }
+
+    if (!trimmedLastName) {
+      showFieldError(lastNameInput, lastNameError, 'Enter your last name.');
+      hasError = true;
+    } else {
+      clearFieldError(lastNameInput, lastNameError);
+    }
+
+    if (!trimmedCompany) {
+      showFieldError(companyInput, companyError, 'Enter your company name.');
+      hasError = true;
+    } else {
+      clearFieldError(companyInput, companyError);
+    }
 
     const emailCheck = await Promise.resolve(checkProfessionalEmail(emailInput.value));
     console.info(`${REGISTER_DEBUG_PREFIX} email check result`, emailCheck);
@@ -112,11 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasError) {
       console.warn(`${REGISTER_DEBUG_PREFIX} validation failed`, {
+        firstNameInvalid: firstNameInput.classList.contains('is-invalid'),
+        lastNameInvalid: lastNameInput.classList.contains('is-invalid'),
+        companyInvalid: companyInput.classList.contains('is-invalid'),
         emailInvalid: emailInput.classList.contains('is-invalid'),
         passwordInvalid: passwordInput.classList.contains('is-invalid'),
         confirmPasswordInvalid: confirmPasswordInput.classList.contains('is-invalid'),
       });
-      const firstInvalid = [emailInput, passwordInput, confirmPasswordInput].find((el) => el.classList.contains('is-invalid'));
+      const firstInvalid = [firstNameInput, lastNameInput, companyInput, emailInput, passwordInput, confirmPasswordInput]
+        .find((el) => el.classList.contains('is-invalid'));
       if (firstInvalid) firstInvalid.focus();
       return;
     }
@@ -144,6 +186,39 @@ document.addEventListener('DOMContentLoaded', () => {
       registerBtn.disabled = false;
       registerBtn.textContent = 'Create account';
       return;
+    }
+
+    // Set the Firebase Auth display name too, so it's visible anywhere the
+    // app reads user.displayName (e.g. future UI), independent of HubSpot.
+    try {
+      await updateProfile(credential.user, { displayName: `${trimmedFirstName} ${trimmedLastName}`.trim() });
+    } catch (error) {
+      console.warn(`${REGISTER_DEBUG_PREFIX} updateProfile failed`, error);
+    }
+
+    // Write the registration profile to Firestore. A Cloud Function
+    // (syncUserProfileToHubspot, triggered on this document's writes) picks
+    // this up and pushes firstname/lastname/company to the matching HubSpot
+    // contact — kept separate from the auth-creation contact stub so this
+    // never blocks account creation itself if Firestore has a hiccup.
+    try {
+      console.info(`${REGISTER_DEBUG_PREFIX} writing profile to Firestore`);
+      await setDoc(doc(db, 'userProfiles', credential.user.uid), {
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        company: trimmedCompany,
+        email: trimmedEmail,
+        createdAt: serverTimestamp(),
+      });
+      console.info(`${REGISTER_DEBUG_PREFIX} profile written`);
+    } catch (error) {
+      console.error(`${REGISTER_DEBUG_PREFIX} profile write failed`, {
+        code: error?.code,
+        message: error?.message,
+        error,
+      });
+      // Don't block the signup flow on this — the account itself is valid.
+      // The user's name/company just won't be synced to HubSpot yet.
     }
 
     try {
