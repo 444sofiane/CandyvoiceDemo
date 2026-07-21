@@ -310,6 +310,48 @@ exports.syncUserProfileToHubspot = onDocumentWritten(
 );
 
 /**
+ * Callable used by authenticated pages to keep the HubSpot contact in sync
+ * with live profile metadata that is only known client-side at page load
+ * time (for example acquisition source and browser info).
+ */
+exports.syncContactProfile = onCall(
+  { secrets: ['HUBSPOT_TOKEN'], serviceAccount: SERVICE_ACCOUNT },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const user = await auth.getUser(request.auth.uid);
+    if (!user.email) {
+      return { synced: false, reason: 'missing-email' };
+    }
+
+    const profile = request.data || {};
+    const properties = {
+      firebase_uid: user.uid,
+    };
+
+    if (typeof profile.acquisitionSource === 'string' && profile.acquisitionSource.trim()) {
+      properties.acquisition_source = profile.acquisitionSource.trim();
+    }
+    if (typeof profile.browserLocale === 'string' && profile.browserLocale.trim()) {
+      properties.browser_locale = profile.browserLocale.trim();
+    }
+    if (typeof profile.browserTimezone === 'string' && profile.browserTimezone.trim()) {
+      properties.browser_timezone = profile.browserTimezone.trim();
+    }
+
+    try {
+      await upsertHubspotContactByEmail(user.email, properties);
+      return { synced: true };
+    } catch (error) {
+      console.error('HubSpot contact profile sync failed:', error.response?.data || error.message);
+      return { synced: false };
+    }
+  },
+);
+
+/**
  * Callable function invoked from the client once it believes the user has
  * verified their email (verify-email.js after a successful `reload(user)`,
  * and auth-guard.js as a defensive re-sync on every authenticated page load).
