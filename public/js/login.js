@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, trimmedEmail, passwordInput.value);
-      recordLoginCallable().catch((err) => console.warn('Could not record login:', err)); // fire-and-forget, don't block redirect
+      recordLogin().catch((err) => console.warn('Could not record login:', err)); // fire-and-forget, don't block redirect
       setFormMessage('Signed in — redirecting…', 'success');
       window.location.href = credential.user.emailVerified ? 'noisefilter.html' : 'verify-email.html';
     } catch (error) {
