@@ -5,6 +5,7 @@ import { getCachedUsageMinutes, subscribeUsage, formatQuota, USAGE_QUOTA_MINUTES
 import { syncEmailVerifiedStatus } from './hubspot-verification-sync.js';
 import { captureAcquisitionSource, getAcquisitionSource, getBrowserLocale, getBrowserTimezone } from './contact-context.js';
 import { syncContactProfile } from './contact-profile-sync.js';
+import {startSessionTracking} from './session-tracker.js';
 
 const featureInterestEndpoint = `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/trackFeatureInterest`;
 const pendingFeatureInterestStorageKey = 'cv-pending-feature-interests';
@@ -26,6 +27,7 @@ onAuthStateChanged(auth, (user) => {
   captureAcquisitionSource();
   setupUserMenu(user);
   setupFeatureInterestTracking(user);
+  startSessionTracking(user);
   void flushPendingFeatureInterests(user);
   void syncContactProfile(user, {
     acquisitionSource: getAcquisitionSource(),

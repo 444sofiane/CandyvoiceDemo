@@ -41,5 +41,10 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false; // only the recordLogin Cloud Function (Admin SDK) writes this
     }
+
+    match /sessions/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // only recordSessionTime (Admin SDK) writes this
+    }
   }
 }

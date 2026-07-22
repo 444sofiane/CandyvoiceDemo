@@ -6,11 +6,13 @@ const admin = require('firebase-admin');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
 const axios = require('axios');
+const { FieldValue } = require('firebase-admin/firestore');
 
 admin.initializeApp();
 
 const db = getFirestore();
 const auth = getAuth();
+
 
 // The project's App Engine default service account (candyvoice@appspot.gserviceaccount.com)
 // does not exist, so every function that needs the HUBSPOT_TOKEN secret is pinned
@@ -267,6 +269,89 @@ exports.onUserCreated = functionsV1
     }
   });
 
+  /*
+  recordSessionTime is called by the client when a session ends (pagehide or visibilitychange). It increments totalSeconds and sessionCount in Firestore
+  for the user, capped at 2 hours per session. This is separate from the
+  onUserCreated trigger because a user can have multiple sessions, and we
+  want to track that.
+  */
+
+  exports.recordSessionTime = onRequest(async (request, response) => {
+  response.set('Access-Control-Allow-Origin', '*');
+
+  if (request.method !== 'POST') {
+    response.status(405).send('Method not allowed');
+    return;
+  }
+
+  let body;
+  try {
+    body = JSON.parse(request.rawBody.toString());
+  } catch (error) {
+    response.status(400).send('Invalid payload');
+    return;
+  }
+
+  const { idToken, durationSeconds } = body;
+  if (!idToken || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+    response.status(400).send('Invalid payload');
+    return;
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = await auth.verifyIdToken(idToken);
+  } catch (error) {
+    response.status(401).send('Invalid token');
+    return;
+  }
+
+  const cappedSeconds = Math.min(durationSeconds, 2 * 60 * 60);
+  const ref = db.collection('sessions').doc(decodedToken.uid);
+  await ref.set(
+    {
+      totalSeconds: FieldValue.increment(cappedSeconds),
+      sessionCount: FieldValue.increment(1),
+    },
+    { merge: true },
+  );
+
+  response.status(204).send();
+});
+
+exports.syncSessionTimeToHubspot = onDocumentWritten(
+  {
+    document: 'sessions/{uid}',
+    secrets: ['HUBSPOT_TOKEN'],
+    serviceAccount: SERVICE_ACCOUNT,
+  },
+  async (event) => {
+    const data = event.data?.after?.data();
+    if (!data || !data.sessionCount) return;
+
+    const uid = event.params.uid;
+    let email;
+    try {
+      email = (await auth.getUser(uid)).email;
+    } catch (error) {
+      console.error(`Could not look up auth user ${uid}:`, error.message);
+      return;
+    }
+    if (!email) return;
+
+    const avgMinutes = Math.round((data.totalSeconds / data.sessionCount / 60) * 10) / 10;
+
+    try {
+      await upsertHubspotContactByEmail(email, {
+        avg_session_minutes: avgMinutes,
+        total_sessions: data.sessionCount,
+      });
+    } catch (error) {
+      console.error('HubSpot session time sync failed:', error.response?.data || error.message);
+    }
+  },
+);
+
 /**
  * Firestore trigger: fires when userProfiles/{uid} is written (currently
  * only a one-time `create`, per firestore.rules — see register.js for the
@@ -358,7 +443,7 @@ exports.syncContactProfile = onCall(
   want to track that.
 */
 
-const { FieldValue } = require('firebase-admin/firestore');
+
 
 exports.recordLogin = onCall(async (request) => {
   if (!request.auth) {
