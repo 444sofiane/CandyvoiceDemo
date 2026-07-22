@@ -3,11 +3,11 @@ export function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function buildApiUrl({ search, bodyDataset, protocol, port }) {
+export function buildApiUrl({ search, bodyDataset, protocol, port, endpointPath = '/api/noise-filter' }) {
   const servedByApi = protocol !== 'file:' && port === '8001';
   const defaultApiUrl = servedByApi
-    ? '/api/noise-filter'
-    : 'http://127.0.0.1:8001/api/noise-filter';
+    ? endpointPath
+    : `http://127.0.0.1:8001${endpointPath}`;
 
   return new URLSearchParams(search).get('api')
     || bodyDataset?.apiUrl
