@@ -3,6 +3,7 @@ import {
   buildApiUrl,
   parseJsonResponse,
   setMessageText,
+  readNdjsonStream,
 } from './noise-filter-utils.js';
 import { convertFileToWav } from './noise-filter-convert.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -171,15 +172,17 @@ document.addEventListener('DOMContentLoaded', () => {
     applyQuotaGate();
   }
 
-  function renderResult(percent, threshold) {
+  function renderResult(percent, threshold, { live = false } = {}) {
     const clamped = Math.max(0, Math.min(100, percent));
     deepfakeScore.textContent = `${clamped.toFixed(1)}%`;
     deepfakeMeterFill.style.width = `${clamped}%`;
 
     const isSynthetic = clamped >= threshold;
-    deepfakeVerdict.textContent = isSynthetic ? 'Likely synthetic' : 'Likely genuine';
-    deepfakeVerdict.classList.toggle('is-synthetic', isSynthetic);
-    deepfakeVerdict.classList.toggle('is-genuine', !isSynthetic);
+    deepfakeVerdict.textContent = live
+      ? 'Analyzing…'
+      : (isSynthetic ? 'Likely synthetic' : 'Likely genuine');
+    deepfakeVerdict.classList.toggle('is-synthetic', !live && isSynthetic);
+    deepfakeVerdict.classList.toggle('is-genuine', !live && !isSynthetic);
 
     resultBlock.classList.remove('d-none');
   }
@@ -259,18 +262,64 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       console.log('API response status:', response.status, response.statusText);
-      const data = await parseJsonResponse(response);
 
-      if (!response.ok || data.error) {
+      // Anything that fails before the detector even starts (auth, rate
+      // limit, quota, bad upload) still comes back as a normal JSON error
+      // response with a real HTTP status — only once that's cleared does
+      // the server switch to streaming progress events.
+      if (!response.ok) {
+        const data = await parseJsonResponse(response);
         throw new Error(data.error || 'Detection failed.');
+      }
+
+      let finalResult = null;
+      let streamError = null;
+
+      await readNdjsonStream(response, (event) => {
+        if (event.type === 'info') {
+          if (Number.isFinite(event.estimated_duration_sec)) {
+            setMessage(`Analyzing… estimated audio length ${event.estimated_duration_sec.toFixed(0)}s.`);
+          }
+          return;
+        }
+
+        if (event.type === 'progress') {
+          const processed = Math.max(0, Math.min(100, event.percent_processed));
+          // The detector reports its own 0–100% completion; map that onto
+          // the remaining slice of the bar (upload/convert already used
+          // the first part) so the bar keeps moving smoothly to 100%.
+          progressBar.style.width = `${35 + processed * 0.6}%`;
+          setMessage(
+            `Analyzing… ${processed.toFixed(1)}% processed (t=${event.elapsed_sec.toFixed(0)}s) — `
+            + `instantaneous ${event.instant_percent.toFixed(1)}%, running average ${event.average_percent.toFixed(1)}%`,
+          );
+          renderResult(event.average_percent, 50, { live: true });
+          return;
+        }
+
+        if (event.type === 'result') {
+          finalResult = event;
+          return;
+        }
+
+        if (event.type === 'error') {
+          streamError = event.error || 'Detection failed.';
+        }
+      });
+
+      if (streamError) {
+        throw new Error(streamError);
+      }
+      if (!finalResult) {
+        throw new Error('The detector stopped responding before finishing.');
       }
 
       progressBar.style.width = '100%';
       setStatus(statusBadge, 'done');
       setMessage('Analysis complete.');
 
-      const percent = Number(data.deepfake_percent);
-      const threshold = Number.isFinite(Number(data.threshold_percent)) ? Number(data.threshold_percent) : 50;
+      const percent = Number(finalResult.deepfake_percent);
+      const threshold = Number.isFinite(Number(finalResult.threshold_percent)) ? Number(finalResult.threshold_percent) : 50;
       renderResult(Number.isFinite(percent) ? percent : 0, threshold);
 
       resetBtn.classList.remove('d-none');

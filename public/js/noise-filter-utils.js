@@ -43,6 +43,50 @@ export async function parseJsonResponse(response) {
   }
 }
 
+/**
+ * Reads a chunked, newline-delimited-JSON (NDJSON) response body and calls
+ * `onEvent(parsedObject)` once per line as it arrives — this is what lets
+ * the UI show live progress instead of waiting for the whole response to
+ * finish. Falls back to reading the whole body at once (still parsed line
+ * by line) if the browser doesn't support streaming response bodies.
+ *
+ * @param {Response} response
+ * @param {(event: any) => void} onEvent
+ */
+export async function readNdjsonStream(response, onEvent) {
+  function handleLine(line) {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    try {
+      onEvent(JSON.parse(trimmed));
+    } catch (error) {
+      console.warn('Could not parse a line of the server stream:', trimmed, error);
+    }
+  }
+
+  if (!response.body || !response.body.getReader) {
+    const text = await response.text();
+    text.split('\n').forEach(handleLine);
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    lines.forEach(handleLine);
+  }
+
+  if (buffer) handleLine(buffer);
+}
+
 export function setMessageText(messageBox, message = '', isError = false) {
   if (!messageBox) return;
   messageBox.textContent = message || '';
