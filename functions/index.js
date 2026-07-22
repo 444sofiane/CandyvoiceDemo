@@ -528,7 +528,7 @@ exports.confirmEmailVerified = onCall(
         {
           properties: {
             email_verified: true,
-            email_verified_date: new Date().toISOString(),
+            email_verified_date: toHubspotDateOnly(),
           },
         },
         { headers: HUBSPOT_HEADERS() },
