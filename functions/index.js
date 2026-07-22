@@ -153,7 +153,7 @@ exports.trackFeatureInterest = onRequest(
       return;
     }
 
-    const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email`;
+    const contactUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(user.email)}?idProperty=email&properties=feature_clicks_deepfake,feature_clicks_imitation,feature_clicks_noizeoff`;
     const currentProps = FEATURE_CLICK_PROPERTIES[featureKey];
 
     let clickCounts = {
