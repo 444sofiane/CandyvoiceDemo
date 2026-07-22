@@ -1,6 +1,10 @@
 import { signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { auth } from './firebase-init.js';
 import { isValidEmailFormat } from './email-check.js';
+import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
+import { functions } from './firebase-init.js';
+
+const recordLogin = httpsCallable(functions, 'recordLogin');
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
@@ -82,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, trimmedEmail, passwordInput.value);
+      recordLoginCallable().catch((err) => console.warn('Could not record login:', err)); // fire-and-forget, don't block redirect
       setFormMessage('Signed in — redirecting…', 'success');
       window.location.href = credential.user.emailVerified ? 'noisefilter.html' : 'verify-email.html';
     } catch (error) {

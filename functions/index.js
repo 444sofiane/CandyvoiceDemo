@@ -351,6 +351,64 @@ exports.syncContactProfile = onCall(
   },
 );
 
+/*
+  recordLogin is called by the client after a successful login, to increment
+  the login count and update lastLoginAt in Firestore. This is separate from
+  the onUserCreated trigger because a user can log in multiple times, and we
+  want to track that.
+*/
+
+const { FieldValue } = require('firebase-admin/firestore');
+
+exports.recordLogin = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+
+  const ref = db.collection('logins').doc(request.auth.uid);
+  await ref.set(
+    { count: FieldValue.increment(1), lastLoginAt: serverTimestampAdmin() },
+    { merge: true },
+  );
+  return { ok: true };
+});
+
+// Small helper so this file doesn't need a second firestore import style
+function serverTimestampAdmin() {
+  return admin.firestore.FieldValue.serverTimestamp();
+}
+
+exports.syncLoginCountToHubspot = onDocumentWritten(
+  {
+    document: 'logins/{uid}',
+    secrets: ['HUBSPOT_TOKEN'],
+    serviceAccount: SERVICE_ACCOUNT,
+  },
+  async (event) => {
+    const count = event.data?.after?.data()?.count;
+    if (count === undefined) return;
+
+    const uid = event.params.uid;
+    let email;
+    try {
+      email = (await auth.getUser(uid)).email;
+    } catch (error) {
+      console.error(`Could not look up auth user ${uid}:`, error.message);
+      return;
+    }
+    if (!email) return;
+
+    try {
+      await upsertHubspotContactByEmail(email, {
+        login_count: count,
+        last_login_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('HubSpot login count sync failed:', error.response?.data || error.message);
+    }
+  },
+);
+
 /**
  * Callable function invoked from the client once it believes the user has
  * verified their email (verify-email.js after a successful `reload(user)`,

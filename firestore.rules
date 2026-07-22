@@ -36,5 +36,10 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
+
+    match /logins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // only the recordLogin Cloud Function (Admin SDK) writes this
+    }
   }
 }
