@@ -4,9 +4,10 @@ import { isValidEmailFormat } from './email-check.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
 import { functions } from './firebase-init.js';
 
-const recordLogin = httpsCallable(functions, 'recordLogin');
+
 
 document.addEventListener('DOMContentLoaded', () => {
+  const recordLogin = httpsCallable(functions, 'recordLogin');
   const form = document.getElementById('loginForm');
   const emailInput = document.getElementById('emailInput');
   const passwordInput = document.getElementById('passwordInput');
