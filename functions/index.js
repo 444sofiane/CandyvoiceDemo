@@ -625,3 +625,93 @@ exports.syncUsageTotalToHubspot = onDocumentWritten(
     }
   },
 );
+
+/**
+ * Called via navigator.sendBeacon from session-tracker.js whenever a tab is
+ * hidden/closed or the user navigates internally. A single browser tab may
+ * send several of these "checkpoints" as the user moves between pages —
+ * only the first one for a given visit (isNewSession: true) increments
+ * sessionCount; every checkpoint adds to totalSeconds. This is a plain
+ * onRequest (not onCall) because sendBeacon can only POST a body, it can't
+ * attach the callable SDK's wrapper/headers.
+ */
+exports.recordSessionTime = onRequest(async (request, response) => {
+  response.set('Access-Control-Allow-Origin', '*');
+
+  if (request.method !== 'POST') {
+    response.status(405).send('Method not allowed');
+    return;
+  }
+
+  let body;
+  try {
+    body = JSON.parse(request.rawBody.toString());
+  } catch (error) {
+    response.status(400).send('Invalid payload');
+    return;
+  }
+
+  const { idToken, durationSeconds, isNewSession } = body;
+  if (!idToken || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+    response.status(400).send('Invalid payload');
+    return;
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = await auth.verifyIdToken(idToken);
+  } catch (error) {
+    response.status(401).send('Invalid token');
+    return;
+  }
+
+  const cappedSeconds = Math.min(durationSeconds, 2 * 60 * 60);
+  const ref = db.collection('sessions').doc(decodedToken.uid);
+
+  const update = { totalSeconds: FieldValue.increment(cappedSeconds) };
+  if (isNewSession) {
+    update.sessionCount = FieldValue.increment(1);
+  }
+
+  await ref.set(update, { merge: true });
+
+  response.status(204).send();
+});
+
+/**
+ * Firestore trigger: whenever sessions/{uid} changes, recompute the average
+ * visit length (totalSeconds / sessionCount) and push it to HubSpot, along
+ * with the running visit count. Rounded to one decimal minute.
+ */
+exports.syncSessionTimeToHubspot = onDocumentWritten(
+  {
+    document: 'sessions/{uid}',
+    secrets: ['HUBSPOT_TOKEN'],
+    serviceAccount: SERVICE_ACCOUNT,
+  },
+  async (event) => {
+    const data = event.data?.after?.data();
+    if (!data || !data.sessionCount) return;
+
+    const uid = event.params.uid;
+    let email;
+    try {
+      email = (await auth.getUser(uid)).email;
+    } catch (error) {
+      console.error(`Could not look up auth user ${uid}:`, error.message);
+      return;
+    }
+    if (!email) return;
+
+    const avgMinutes = Math.round((data.totalSeconds / data.sessionCount / 60) * 10) / 10;
+
+    try {
+      await upsertHubspotContactByEmail(email, {
+        avg_session_minutes: avgMinutes,
+        total_sessions: data.sessionCount,
+      });
+    } catch (error) {
+      console.error('HubSpot session time sync failed:', error.response?.data || error.message);
+    }
+  },
+);
