@@ -1,7 +1,8 @@
 /* Deepfake-detection-only additions — everything else (nav, hero, card,
    dropzone, file row, progress bar, buttons) comes from css/noisefilter.css
    so this page stays visually identical to NoizeOff. This file only adds
-   the score/verdict meter, which NoizeOff has no equivalent of. */
+   the score/verdict meter and the live chart, which NoizeOff has no
+   equivalent of. */
 
 .cv-deepfake-result {
   border: 1px solid var(--cv-line);
@@ -59,4 +60,19 @@
   border-radius: 999px;
   background: linear-gradient(90deg, var(--cv-success), #F5C542 60%, #C0293C);
   transition: width 0.3s ease;
+}
+
+/* Live chart — same dark canvas treatment as the NoizeOff level graph /
+   spectrogram, so the two feature pages feel consistent. */
+.cv-deepfake-graph-wrap {
+  background: #000;
+  border-radius: 10px;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.cv-deepfake-graph-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 200px;
 }

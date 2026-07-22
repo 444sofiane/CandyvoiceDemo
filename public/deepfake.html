@@ -65,7 +65,7 @@
       <ul class="list-unstyled cv-side-list">
         <li><span class="dot">1</span><span>Drop in any audio file — WAV, MP3, M4A, FLAC, OGG.</span></li>
         <li><span class="dot">2</span><span>The detector analyzes the voice in short frames.</span></li>
-        <li><span class="dot">3</span><span>Get an average deepfake score for the whole file.</span></li>
+        <li><span class="dot">3</span><span>Watch the score update live, frame by frame.</span></li>
       </ul>
     </div>
 
@@ -114,6 +114,13 @@
           <div id="originalPreview" class="mb-3 d-none">
             <p class="cv-footer-note mb-1">Uploaded audio</p>
             <audio controls id="originalAudio"></audio>
+          </div>
+
+          <div id="deepfakeGraphBlock" class="mb-3 d-none">
+            <p class="cv-footer-note mb-2">Live detection — instantaneous vs. running average</p>
+            <div class="cv-deepfake-graph-wrap">
+              <canvas id="deepfakeGraphCanvas"></canvas>
+            </div>
           </div>
 
           <div id="resultBlock" class="mb-3 d-none">

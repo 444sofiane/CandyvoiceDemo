@@ -6,6 +6,7 @@ import {
   readNdjsonStream,
 } from './noise-filter-utils.js';
 import { convertFileToWav } from './noise-filter-convert.js';
+import { createDeepfakeGraph } from './deepfake-graph.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { auth } from './firebase-init.js';
 import {
@@ -78,6 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const analyzeBtn = document.getElementById('analyzeBtn');
   const resetBtn = document.getElementById('resetBtn');
   const removeBtn = document.getElementById('removeBtn');
+
+  const graphBlock = document.getElementById('deepfakeGraphBlock');
+  const graphCanvas = document.getElementById('deepfakeGraphCanvas');
+  const deepfakeGraph = graphCanvas ? createDeepfakeGraph({ canvas: graphCanvas }) : null;
 
   let currentObjectUrl = null;
   let currentFile = null;
@@ -161,6 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     resetBtn.classList.add('d-none');
     progressBar.style.width = '0%';
     setMessage('');
+
+    if (graphBlock) graphBlock.classList.add('d-none');
+    if (deepfakeGraph) deepfakeGraph.reset();
 
     setStatus(statusBadge, 'idle');
     analyzeBtn.disabled = false;
@@ -294,6 +302,9 @@ document.addEventListener('DOMContentLoaded', () => {
             + `instantaneous ${event.instant_percent.toFixed(1)}%, running average ${event.average_percent.toFixed(1)}%`,
           );
           renderResult(event.average_percent, 50, { live: true });
+
+          if (graphBlock) graphBlock.classList.remove('d-none');
+          if (deepfakeGraph) deepfakeGraph.addPoint(event.elapsed_sec, event.instant_percent, event.average_percent);
           return;
         }
 
