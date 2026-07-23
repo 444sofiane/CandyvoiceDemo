@@ -15,6 +15,7 @@ import {
   hasQuotaFor,
   USAGE_QUOTA_MINUTES,
 } from './usage-client.js';
+import { createSpectrogramController } from './noise-filter-spectrogram.js';
 
 // Keep this list in sync with ALLOWED_VOICE_MODELS in api_server.py — the
 // `folder` value is sent to the API as-is and must match a real folder
@@ -94,6 +95,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultBlock = document.getElementById('resultBlock');
   const resultAudio = document.getElementById('resultAudio');
 
+  const spectrogramBlock = document.getElementById('spectrogramBlock');
+  const originalSpectrogramEl = document.getElementById('originalSpectrogram');
+  const resultSpectrogramEl = document.getElementById('resultSpectrogram');
+  const compareBtn = document.getElementById('compareBtn');
+
   const imitateBtn = document.getElementById('imitateBtn');
   const downloadBtn = document.getElementById('downloadBtn');
   const resetBtn = document.getElementById('resetBtn');
@@ -102,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedVoice = null; // { folder, label, image }
   let currentObjectUrl = null;
   let currentFile = null;
+  let comparePlaying = false; // for spectrogram compare button
 
   const apiUrl = buildApiUrl({
     search: window.location.search,
@@ -110,6 +117,42 @@ document.addEventListener('DOMContentLoaded', () => {
     port: window.location.port,
     endpointPath: '/api/imitation',
   });
+
+  const spectrogramController = createSpectrogramController({
+    originalSpectrogramEl,
+    resultSpectrogramEl,
+    originalAudio,
+    resultAudio,
+  });
+
+  // Compare button for spectrogram
+  if (compareBtn) {
+    compareBtn.addEventListener('click', () => {
+      if (!spectrogramController) {
+        console.error('Spectrogram controller is not initialized.');
+        return;
+      }
+
+      if (comparePlaying) {
+        spectrogramController.stop();
+        compareBtn.textContent = 'Play & compare spectrograms';
+        comparePlaying = false;
+      } else {
+        spectrogramController.start();
+        compareBtn.textContent = 'Stop comparison';
+        comparePlaying = true;
+      }
+    });
+
+    [originalAudio, resultAudio].forEach((el) => {
+      el.addEventListener('ended', () => {
+        if (originalAudio.ended && resultAudio.ended) {
+          compareBtn.textContent = 'Play & compare spectrograms';
+          comparePlaying = false;
+        }
+      });
+    });
+  }
 
   function setMessage(message, isError = false) {
     setMessageText(messageBox, message, isError);
