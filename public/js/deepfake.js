@@ -328,13 +328,14 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.style.width = '100%';
       setStatus(statusBadge, 'done');
       setMessage('Analysis complete.');
-
+      
       const percent = Number(finalResult.deepfake_percent);
       const threshold = Number.isFinite(Number(finalResult.threshold_percent)) ? Number(finalResult.threshold_percent) : 50;
       renderResult(Number.isFinite(percent) ? percent : 0, threshold);
-
       resetBtn.classList.remove('d-none');
       analyzeBtn.textContent = 'Analyzed';
+      // display hubspot satisfaction survey after analysis
+      document.getElementById('survey-container').style.display = 'block';
     } catch (error) {
       console.error(error);
       setMessage(error.message || 'Detection failed.', true);
