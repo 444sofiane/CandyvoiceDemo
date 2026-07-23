@@ -1,160 +1,154 @@
 # CandyVoice Demo
 
-A web-based demonstrator for CandyVoice's noise filtering and voice-processing features. The web interface talks to a Python API over REST, which in turn relays commands to a separate Windows application that performs the actual audio processing.
+## Overview
 
-🔗 **Live demo:** [candyvoice.web.app](https://candyvoice.web.app)
+CandyVoice Demo is a full-stack demonstration platform exposing several AI-based speech processing services through a secure web application.
 
-## Architecture
+The platform consists of a static frontend hosted on Firebase Hosting, authenticated with Firebase Authentication, and a Python REST API responsible for orchestrating the CandyVoice inference engine. The backend manages asynchronous processing, quota enforcement, secure file delivery, progress reporting, and third-party integrations.
 
-```
-┌─────────────────┐      REST HTTP       ┌────────────────┐      commands       ┌──────────────────┐
-│   Web Interface  │ ───────────────────► │   Python API   │ ───────────────────► │   Windows App     │
-│ (HTML/CSS/JS,    │ ◄─────────────────── │  (bridge/relay)│ ◄─────────────────── │ (audio processing)│
-│  Firebase Hosting)│      responses       └────────────────┘      results        └──────────────────┘
-└─────────────────┘
-        │
-        │ Auth / Firestore / Functions
-        ▼
-┌─────────────────┐      SMTP relay      ┌────────────────┐
-│  Firebase Auth /  │ ───────────────────► │    SMTP2GO      │ ──► user's inbox
-│  Cloud Functions  │                      │ (custom domain, │
-│                    │                      │  SPF/DKIM/DMARC)│
-└─────────────────┘                      └────────────────┘
-```
+Current processing pipelines include:
 
-- **Web Interface** (this repo) — the front-end the user interacts with: registration/auth, and demo pages for noise filtering, voice imitation, and deepfake detection. Served as a static site via **Firebase Hosting**.
-- **Python API** — a lightweight REST server that receives requests from the web interface and forwards them as commands to the Windows app. *(Not yet published — see [Python API](#python-api) below.)*
-- **Windows App** — a separate native application that performs the actual audio/voice processing and returns results back through the Python API.
-- **Firebase** — provides Hosting, Authentication, Firestore (usage tracking), and Cloud Functions (HubSpot sync, usage quota enforcement).
-- **SMTP2GO** — handles outbound transactional email (email verification, etc.) on behalf of `candyvoice.com`, configured with SPF, DKIM, and DMARC for deliverability.
+- Noise Filtering (NoizeOff)
+- Voice Imitation
+- Deepfake Detection
 
-## Features / Pages
+---
 
-| Page | Description |
-|---|---|
-| `index.html` | Sign-in |
-| `register.html` | User registration |
-| `verify-email.html` | Email verification flow |
-| `noisefilter.html` | Noise filtering demonstrator (NoizeOff) |
-| `imitation.html` | Voice imitation demonstrator (placeholder) |
-| `deepfake.html` | Deepfake detection demonstrator (placeholder) |
-
-## Tech Stack
-
-- **Frontend:** HTML, CSS, JavaScript (static, no build step)
-- **Hosting:** Firebase Hosting, served from `public/`
-- **Backend-as-a-Service:** Firebase (Authentication, Firestore, Cloud Functions)
-- **Transactional email:** SMTP2GO, connected as a custom SMTP relay for Firebase Auth emails, with SPF/DKIM/DMARC configured on `candyvoice.com`
-- **Backend bridge:** Python REST API (separate service, relays to the Windows app)
-
-## Project Structure
+## Technical Architecture
 
 ```
-CandyvoiceDemo/
-├── public/              # Everything served by Firebase Hosting
-│   ├── css/              # Stylesheets
-│   ├── image/            # Image assets
-│   ├── js/                # Client-side JavaScript
-│   ├── deepfake.html
-│   ├── imitation.html
-│   ├── index.html
-│   ├── noisefilter.html
-│   ├── register.html
-│   └── verify-email.html
-├── functions/            # Firebase Cloud Functions (HubSpot sync, usage quota, etc.)
-├── firebase.json          # Firebase project configuration (Hosting + Functions)
-├── firestore.rules         # Firestore security rules
-├── .firebaserc
-└── package-lock.json
+                    Browser
+                       │
+          Firebase Authentication
+                       │
+               ID Token (JWT)
+                       │
+        Firebase Hosting (Frontend)
+                       │
+             HTTPS REST Requests
+                       │
+             Python API (Flask)
+                       │
+      ┌────────┬──────────────┬─────────────┐
+      │        │              │
+ Noise Filter  Voice Clone   Deepfake Model
+      │        │              │
+      └────────┴──────────────┘
+               Processing Engine
+                       │
+          Output File Generation
+                       │
+      Signed Download URL returned
 ```
 
-> Note: `functions/` and its `package.json`/`index.js` live outside `public/` so Firebase Hosting only ever serves static frontend files, and Cloud Functions are deployed separately via the Firebase CLI.
+## Core Features
 
-## Prerequisites
+- Firebase Authentication with ID token verification
+- Firestore-backed user quota management
+- REST API for AI inference services
+- Server-side upload validation
+- Live processing progress (SSE/streamed updates)
+- Secure signed download links
+- Rate limiting and request validation
+- HubSpot integration for feedback collection
+- SMTP2GO email verification workflow
+- Firebase Cloud Functions for backend automation
 
-- [Node.js](https://nodejs.org/) and npm
-- The [Firebase CLI](https://firebase.google.com/docs/cli) (`npm install -g firebase-tools`)
-- A [Firebase](https://firebase.google.com/) project (Hosting, Auth, Firestore, Functions)
-- A [SMTP2GO](https://www.smtp2go.com/) account configured as the custom SMTP provider for Firebase Auth emails
-- The Python API running and reachable (see below)
-- The Windows app installed and running on the machine the Python API relays to
+## Repository Structure
 
-## Setup
+```text
+functions/              Firebase Cloud Functions
+public/                 Static frontend assets
+python-api/             Flask API
+docs/                   Documentation
+firebase.json           Hosting configuration
+firestore.rules         Firestore security rules
+```
 
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/444sofiane/CandyvoiceDemo.git
-   cd CandyvoiceDemo
-   ```
+## Backend
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+The Python service exposes independent processing endpoints for each inference pipeline.
 
-3. **Log in and select your Firebase project**
-   ```bash
-   firebase login
-   firebase use candyvoice
-   ```
+| Endpoint | Description |
+|----------|-------------|
+| POST /api/noise-filter | Noise reduction pipeline |
+| POST /api/imitation | Voice imitation pipeline |
+| POST /api/deepfake-detection | AI-generated speech detection |
+| GET /outputs/<file> | Secure output retrieval |
+| GET /health | Health endpoint |
 
-4. **Configure Firebase**
-   - Confirm `.firebaserc` points at your Firebase project ID.
-   - Adjust `firestore.rules` as needed.
-   - Firebase config (API keys, etc.) lives in `public/js/firebase-config.js`.
+The backend is responsible for:
 
-5. **Configure the Python API endpoint**
-   - Point the front-end (in `public/js/`) to the base URL of your running Python API instance.
+- Authentication verification
+- Usage quota enforcement
+- Temporary file management
+- Progress streaming
+- Process orchestration
+- Output cleanup
+- Error handling
 
-6. **Run locally**
-   ```bash
-   firebase emulators:start
-   ```
-   or serve the `public/` folder with any static file server for frontend-only work.
+## Frontend
 
-7. **Deploy**
-   ```bash
-   firebase deploy
-   ```
-   Or deploy Hosting and Functions independently:
-   ```bash
-   firebase deploy --only hosting
-   firebase deploy --only functions
-   ```
+The frontend is a vanilla JavaScript application deployed on Firebase Hosting.
 
-## Custom domain & email deliverability
+Responsibilities include:
 
-The app is served at [candyvoice.web.app](https://candyvoice.web.app), connected as a custom domain under Firebase Hosting.
+- Authentication flow
+- File upload
+- Progress visualization
+- API communication
+- Download management
+- User profile and quota display
+- HubSpot survey integration after successful processing
 
-Firebase Authentication is configured to send emails (verification, password reset, etc.) through **SMTP2GO** rather than Firebase's default sender, using `candyvoice.com` as the sending domain. To keep those emails out of spam and avoid them being silently dropped by strict corporate mail filters, the domain has:
+## Security
 
-- **SPF** — authorizes SMTP2GO's sending servers
-- **DKIM** — SMTP2GO signs outgoing mail with a `candyvoice.com`-aligned key
-- **DMARC** — published at `_dmarc.candyvoice.com`, currently at `p=none` while aggregate reports are monitored
-- **A custom Auth email domain** — verified via Firebase's *Templates → Customize domain* flow, so email action links point to `candyvoice.web.app/__/auth/action` instead of the default `*.firebaseapp.com` / `*.web.app` domains (which some spam filters flag as a phishing signal)
+- Firebase JWT verification
+- Firestore security rules
+- CORS restrictions
+- MIME type validation
+- Allowed model validation
+- Signed download URLs
+- Request rate limiting
+- Temporary file cleanup
 
-If you fork this project and want to reuse the same setup, you'll need to repeat the SPF/DKIM/DMARC and Firebase custom-domain verification steps for your own domain.
+## Technologies
 
-## Python API
+### Frontend
+- HTML5
+- CSS3
+- JavaScript (ES6)
+- Firebase Hosting
 
-The Python API acts as a relay between this web interface and the Windows app:
+### Backend
+- Python
+- Flask
+- Firebase Admin SDK
 
-- Exposes REST endpoints consumed by the web interface.
-- Forwards received commands to the Windows app for processing.
-- Returns the Windows app's results back to the web interface.
+### Services
+- Firestore
+- Firebase Authentication
+- Cloud Functions
+- HubSpot
+- SMTP2GO
 
-This service is not yet published to a public repository. Once available, add its repo link and setup instructions here.
+## Local Development
 
-## Windows App
+```bash
+# Frontend
+npm install
+firebase emulators:start
 
-A separate native Windows application that performs the actual audio processing (noise filtering, voice imitation, deepfake analysis). It runs independently and receives instructions only via the Python API — it does not communicate directly with the web interface.
+# Backend
+python -m venv venv
+pip install -r requirements.txt
+python api_server.py
+```
 
-## Notes
+## Roadmap
 
-- The full end-to-end demo (web → Python API → Windows app) requires all three components running simultaneously.
-- Without the Python API and Windows app running, only the static/UI parts of the web interface (registration, navigation, etc.) will be functional.
-- `imitation.html` and `deepfake.html` are currently UI placeholders — no processing is wired into them yet.
-
-## License
-
-Add your license here.
+- Voice Processing History
+- Batch Processing
+- Additional Voice Models
+- Analytics Dashboard
+- Processing Metrics
