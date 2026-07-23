@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="image/image.png">
 <link rel="stylesheet" href="css/noisefilter.css">
 <link rel="stylesheet" href="css/user-menu.css">
+<link rel="stylesheet" href="css/imitation.css">
 <script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
 
 </head>
@@ -57,36 +58,106 @@
 <div class="container cv-hero">
   <div class="row g-5">
     <div class="col-lg-5">
-      <div class="cv-eyebrow mb-2">Voice analysis</div>
-      <h1 class="mb-3">Match a speaker's style.<br><span class="accent">Keep the same interface language.</span></h1>
-      <p class="lead mb-4">The Imitation page is part of the feature menu, but it is still a placeholder. It mirrors the NoizeOff layout so future controls can be added without redesigning the workspace.</p>
+      <div class="cv-eyebrow mb-2">Voice imitation</div>
+      <h1 class="mb-3">Pick a voice.<br><span class="accent">Make any audio speak like them.</span></h1>
+      <p class="lead mb-4">Choose one of the available voice models, upload a source audio file, and CandyVoice re-synthesizes it in that voice.</p>
 
       <ul class="list-unstyled cv-side-list">
-        <li><span class="dot">1</span><span>Use the menu to jump between all three CandyVoice tools.</span></li>
-        <li><span class="dot">2</span><span>This screen shares the same spacing, card, and accent treatment.</span></li>
-        <li><span class="dot">3</span><span>No processing is wired into this view yet.</span></li>
+        <li><span class="dot">1</span><span>Pick a voice from the gallery.</span></li>
+        <li><span class="dot">2</span><span>Upload the audio you want converted.</span></li>
+        <li><span class="dot">3</span><span>Preview the result and download it.</span></li>
       </ul>
     </div>
 
     <div class="col-lg-7">
-      <div class="cv-card cv-placeholder-card p-4 p-md-5">
-        <div>
-          <span class="cv-placeholder-badge mb-3">Preview</span>
-          <div class="cv-placeholder-stage">
-            <div class="cv-placeholder-visual">
-              <h3>Imitation</h3>
-              <p>This page is reserved for the future imitation workflow. For now it only presents the same polished shell as NoizeOff, with no treatment controls enabled.</p>
-              <div class="cv-placeholder-status">No treatment available yet</div>
+      <div class="cv-card p-4 p-md-5">
+
+        <div id="voiceStep">
+          <h3 class="mb-3">Choose a voice</h3>
+          <div class="cv-voice-grid" id="voiceGrid" role="listbox" aria-label="Voice models"></div>
+        </div>
+
+        <div id="uploadStep" class="d-none">
+
+          <div class="cv-selected-voice-banner mb-3" id="selectedVoiceBanner">
+            <img id="selectedVoiceImg" src="" alt="">
+            <span class="cv-file-name mb-0" id="selectedVoiceName">—</span>
+            <button type="button" class="cv-change-voice-btn" id="changeVoiceBtn">Change voice</button>
+          </div>
+
+          <div class="cv-dropzone" id="dropzone">
+            <div class="cv-drop-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#6C2BD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V16" stroke="#6C2BD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Drag & drop your audio file</h3>
+            <p>or click to browse — any format</p>
+            <button type="button" class="cv-browse-btn" id="browseBtn">Choose file</button>
+            <input type="file" id="fileInput" accept="audio/*" hidden>
+          </div>
+
+        </div>
+
+        <div id="workStep" class="d-none">
+
+          <div class="cv-selected-voice-banner mb-3" id="selectedVoiceBannerWork">
+            <img id="selectedVoiceImgWork" src="" alt="">
+            <span class="cv-file-name mb-0" id="selectedVoiceNameWork">—</span>
+            <button type="button" class="cv-change-voice-btn" id="changeVoiceBtnWork">Change voice</button>
+          </div>
+
+          <div class="cv-file-row mb-3">
+            <div class="cv-file-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 18V5L20 3V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
+                <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="flex-grow-1">
+              <p class="cv-file-name" id="fileName">recording.mp3</p>
+              <p class="cv-file-meta" id="fileMeta">—</p>
+            </div>
+            <span class="cv-status-badge cv-status-idle" id="statusBadge">Ready</span>
+            <button class="cv-remove-btn" id="removeBtn" title="Remove file">&times;</button>
+          </div>
+
+          <div class="mb-3">
+            <div class="cv-progress">
+              <div class="cv-progress-bar" id="progressBar"></div>
             </div>
           </div>
+
+          <div id="originalPreview" class="mb-3 d-none">
+            <p class="cv-footer-note mb-1">Original</p>
+            <audio controls id="originalAudio"></audio>
+          </div>
+
+          <div id="resultBlock" class="mb-3 d-none">
+            <p class="cv-footer-note mb-1">Imitated result</p>
+            <audio controls id="resultAudio"></audio>
+          </div>
+
+          <div id="messageBox" class="cv-footer-note mt-2 text-muted"></div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="cv-primary-btn" id="imitateBtn">Apply Voice Imitation</button>
+            <a class="cv-ghost-btn d-none" id="downloadBtn" download>Download result</a>
+            <button class="cv-ghost-btn d-none" id="resetBtn">Try another file</button>
+          </div>
+
         </div>
-        <p class="cv-footer-note mt-3 mb-0">When the feature is ready, the analysis UI can be mounted into this panel without changing the navigation or styling.</p>
+
       </div>
+      <p class="cv-footer-note mt-3 mb-0">Files are processed for this session only and are not stored by CandyVoice.</p>
     </div>
   </div>
 </div>
 
 <script type="module" src="js/auth-guard.js"></script>
+<script type="module" src="js/imitation.js"></script>
 
 </body>
 </html>
