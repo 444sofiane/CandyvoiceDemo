@@ -84,6 +84,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const graphCanvas = document.getElementById('deepfakeGraphCanvas');
   const deepfakeGraph = graphCanvas ? createDeepfakeGraph({ canvas: graphCanvas }) : null;
 
+  const syncPlayheadToggle = document.getElementById('syncPlayheadToggle');
+  let syncPlayheadEnabled = syncPlayheadToggle ? syncPlayheadToggle.checked : true;
+
+  function updatePlayheadFromAudio() {
+    if (!deepfakeGraph || !syncPlayheadEnabled) return;
+    deepfakeGraph.setPlayhead(originalAudio.currentTime);
+  }
+
+  if (syncPlayheadToggle) {
+    syncPlayheadToggle.addEventListener('change', () => {
+      syncPlayheadEnabled = syncPlayheadToggle.checked;
+      if (!deepfakeGraph) return;
+      if (syncPlayheadEnabled) updatePlayheadFromAudio();
+      else deepfakeGraph.clearPlayhead();
+    });
+  }
+
+  originalAudio.addEventListener('timeupdate', updatePlayheadFromAudio);
+  originalAudio.addEventListener('seeking', updatePlayheadFromAudio);
+  originalAudio.addEventListener('play', updatePlayheadFromAudio);
+
+  if (graphCanvas) {
+    graphCanvas.style.cursor = 'pointer';
+    graphCanvas.addEventListener('click', (event) => {
+      if (!deepfakeGraph || !currentFile) return;
+      const targetTime = deepfakeGraph.timeForClientX(event.clientX);
+      if (!Number.isFinite(targetTime)) return;
+      originalAudio.currentTime = targetTime;
+      originalAudio.play().catch(() => { });
+      updatePlayheadFromAudio();
+    });
+  }
+
   let currentObjectUrl = null;
   let currentFile = null;
 
@@ -331,9 +364,10 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.style.width = '100%';
       setStatus(statusBadge, 'done');
       setMessage('Analysis complete.');
-      
+
       const percent = Number(finalResult.deepfake_percent);
       const threshold = Number.isFinite(Number(finalResult.threshold_percent)) ? Number(finalResult.threshold_percent) : 50;
+      if (deepfakeGraph) deepfakeGraph.setThreshold(threshold);
       renderResult(Number.isFinite(percent) ? percent : 0, threshold);
       resetBtn.classList.remove('d-none');
       analyzeBtn.textContent = 'Analyzed';
