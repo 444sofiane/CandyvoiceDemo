@@ -119,6 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentObjectUrl = null;
   let currentFile = null;
+  let currentRequestId = 0;
+  let activeAbortController = null;
 
   const apiUrl = buildApiUrl({
     search: window.location.search,
@@ -234,6 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('No file selected for analysis.');
       return;
     }
+    const requestId = ++currentRequestId;
+    activeAbortController = new AbortController();
 
     const minutesNeeded = await getAudioDurationMinutes(originalAudio);
 
@@ -258,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
           setMessage(stage === 'decoding' ? 'Decoding audio…' : 'Encoding WAV…');
         },
       });
+      if (requestId !== currentRequestId) return;
     } catch (error) {
       console.error(error);
       setMessage(error.message || 'Could not convert this file.', true);
@@ -266,6 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
       analyzeBtn.textContent = 'Run detection';
       return;
     }
+
+
 
     if (!auth.currentUser) {
       setMessage('Your session has expired — please sign in again.', true);
@@ -282,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let idToken;
     try {
       idToken = await auth.currentUser.getIdToken();
+      if (requestId !== currentRequestId) return;
     } catch (error) {
       console.error('Failed to get ID token:', error);
       setMessage('Could not verify your session. Please sign in again.', true);
@@ -290,6 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
       analyzeBtn.textContent = 'Run detection';
       return;
     }
+
+
 
     try {
       const response = await fetch(apiUrl, {
@@ -300,7 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,
+        signal: activeAbortController.signal,
       });
+
+      if (requestId !== currentRequestId) return;
 
       console.log('API response status:', response.status, response.statusText);
 
@@ -317,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let streamError = null;
 
       await readNdjsonStream(response, (event) => {
+        if (requestId !== currentRequestId) return;
         if (event.type === 'info') {
           if (Number.isFinite(event.estimated_duration_sec)) {
             setMessage(`Analyzing… estimated audio length ${event.estimated_duration_sec.toFixed(0)}s.`);
@@ -354,6 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      if (requestId !== currentRequestId) return;
+
       if (streamError) {
         throw new Error(streamError);
       }
@@ -374,6 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // display hubspot satisfaction survey after analysis
       document.getElementById('survey-container').style.display = 'block';
     } catch (error) {
+      if (requestId !== currentRequestId) return;
       console.error(error);
       setMessage(error.message || 'Detection failed.', true);
       setStatus(statusBadge, 'idle');
@@ -383,6 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function resetAll() {
+    currentRequestId++;
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
     currentFile = null;
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
