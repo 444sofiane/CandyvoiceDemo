@@ -303,7 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           renderResult(event.average_percent, 50, { live: true });
 
-          if (graphBlock) graphBlock.classList.remove('d-none');
+          if (graphBlock && graphBlock.classList.contains('d-none')) {
+            graphBlock.classList.remove('d-none');
+            if (deepfakeGraph) deepfakeGraph.resize();
+          }
           if (deepfakeGraph) deepfakeGraph.addPoint(event.elapsed_sec, event.instant_percent, event.average_percent);
           return;
         }

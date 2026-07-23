@@ -88,6 +88,7 @@ export function createDeepfakeGraph({ canvas }) {
     draw();
   }
 
+
   function reset() {
     points.length = 0;
     resizeCanvas();
@@ -101,6 +102,11 @@ export function createDeepfakeGraph({ canvas }) {
 
   resizeCanvas();
   paintEmpty();
+  
+  function resize() {
+    resizeCanvas();
+    draw();
+  }
 
-  return { addPoint, reset };
+  return { addPoint, reset, resize };
 }
