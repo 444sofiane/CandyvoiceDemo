@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CandyVoice — Imitation</title>
+<title>CandyVoice — Frame Recovery</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="image/image.png">
 <link rel="stylesheet" href="css/noisefilter.css">
 <link rel="stylesheet" href="css/user-menu.css">
-<link rel="stylesheet" href="css/imitation.css">
+<link rel="stylesheet" href="css/framerecovery.css">
 <script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
 
 </head>
@@ -26,13 +26,13 @@
         <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
         CandyVoice
       </span>
-      <span class="cv-pill">Imitation</span>
+      <span class="cv-pill">Frame Recovery</span>
     </div>
     <div class="cv-feature-switcher" aria-label="Feature navigation">
       <a class="cv-feature-link" href="deepfake.html">Deepfake detection</a>
-      <a class="cv-feature-link is-active" href="imitation.html" aria-current="page">Imitation</a>
+      <a class="cv-feature-link" href="imitation.html">Imitation</a>
       <a class="cv-feature-link" href="noisefilter.html">NoizeOff</a>
-      <a class="cv-feature-link" href="frameRecovery.html">Frame Recovery</a>
+      <a class="cv-feature-link is-active" href="frameRecovery.html" aria-current="page">Frame Recovery</a>
     </div>
     <div class="cv-user-menu" id="userMenu">
       <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false" title="Account">
@@ -59,33 +59,21 @@
 <div class="container cv-hero">
   <div class="row g-5">
     <div class="col-lg-5">
-      <div class="cv-eyebrow mb-2">Voice imitation</div>
-      <h1 class="mb-3">Pick a voice.<br><span class="accent">Make any audio speak like them.</span></h1>
-      <p class="lead mb-4">Choose one of the available voice models, upload a source audio file, and CandyVoice re-synthesizes it in that voice.</p>
+      <div class="cv-eyebrow mb-2">Audio resilience</div>
+      <h1 class="mb-3">Lose frames.<br><span class="accent">Get them back.</span></h1>
+      <p class="lead mb-4">Upload any audio file, pick how much of it to simulate losing, and CandyVoice reconstructs the missing frames — showing how resilient the pipeline is to real-world packet loss and dropouts.</p>
 
       <ul class="list-unstyled cv-side-list">
-        <li><span class="dot">1</span><span>Pick a voice from the gallery.</span></li>
-        <li><span class="dot">2</span><span>Upload the audio you want converted.</span></li>
-        <li><span class="dot">3</span><span>Preview the result and download it.</span></li>
+        <li><span class="dot">1</span><span>Drop in any audio file — WAV, MP3, M4A, FLAC, OGG.</span></li>
+        <li><span class="dot">2</span><span>Choose how much simulated frame loss to introduce, up to 50%.</span></li>
+        <li><span class="dot">3</span><span>Preview the recovered result and download it.</span></li>
       </ul>
     </div>
 
     <div class="col-lg-7">
       <div class="cv-card p-4 p-md-5">
 
-        <div id="voiceStep">
-          <h3 class="mb-3">Choose a voice</h3>
-          <div class="cv-voice-grid" id="voiceGrid" role="listbox" aria-label="Voice models"></div>
-        </div>
-
-        <div id="uploadStep" class="d-none">
-
-          <div class="cv-selected-voice-banner mb-3" id="selectedVoiceBanner">
-            <img id="selectedVoiceImg" src="" alt="">
-            <span class="cv-file-name mb-0" id="selectedVoiceName">—</span>
-            <button type="button" class="cv-change-voice-btn" id="changeVoiceBtn">Change voice</button>
-          </div>
-
+        <div id="uploadStep">
           <div class="cv-dropzone" id="dropzone">
             <div class="cv-drop-icon">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -98,16 +86,9 @@
             <button type="button" class="cv-browse-btn" id="browseBtn">Choose file</button>
             <input type="file" id="fileInput" accept="audio/*" hidden>
           </div>
-
         </div>
 
         <div id="workStep" class="d-none">
-
-          <div class="cv-selected-voice-banner mb-3" id="selectedVoiceBannerWork">
-            <img id="selectedVoiceImgWork" src="" alt="">
-            <span class="cv-file-name mb-0" id="selectedVoiceNameWork">—</span>
-            <button type="button" class="cv-change-voice-btn" id="changeVoiceBtnWork">Change voice</button>
-          </div>
 
           <div class="cv-file-row mb-3">
             <div class="cv-file-icon">
@@ -125,6 +106,15 @@
             <button class="cv-remove-btn" id="removeBtn" title="Remove file">&times;</button>
           </div>
 
+          <div class="cv-frame-recovery-control mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label for="lossSlider" class="cv-label mb-0">Simulated frame loss</label>
+              <span class="cv-frame-recovery-value" id="lossValue">25%</span>
+            </div>
+            <input type="range" class="cv-slider" id="lossSlider" min="0" max="50" step="1" value="25">
+            <p class="cv-footer-note mt-2 mb-0">How many frames to drop before recovery runs — capped at 50%, since beyond that there's too little signal left to reconstruct.</p>
+          </div>
+
           <div class="mb-3">
             <div class="cv-progress">
               <div class="cv-progress-bar" id="progressBar"></div>
@@ -133,27 +123,27 @@
 
           <div id="originalPreview" class="mb-3 d-none">
             <p class="cv-footer-note mb-1">Original</p>
-            <audio controls id="originalAudio"></audio>
+            <audio controls id="originalAudio" crossorigin="anonymous"></audio>
           </div>
 
           <div id="resultBlock" class="mb-3 d-none">
-            <p class="cv-footer-note mb-1">Imitated result</p>
-            <audio controls id="resultAudio"></audio>
+            <p class="cv-footer-note mb-1">Recovered result</p>
+            <audio controls id="resultAudio" crossorigin="anonymous"></audio>
           </div>
 
           <div id="spectrogramBlock" class="mb-3 d-none">
             <p class="cv-footer-note mb-2">Spectrogram — original (in)</p>
             <div class="cv-spectrogram-wrap" id="originalSpectrogram"></div>
-            <p class="cv-footer-note mb-2 mt-3">Spectrogram — imitated (out)</p>
+            <p class="cv-footer-note mb-2 mt-3">Spectrogram — recovered (out)</p>
             <div class="cv-spectrogram-wrap" id="resultSpectrogram"></div>
-            <button class="cv-ghost-btn mt-2" id="compareBtn" type="button">Play &amp; compare spectrograms</button>
+            <button class="cv-ghost-btn mt-2" id="compareBtn" type="button">Play &amp; compare levels</button>
           </div>
 
           <div id="messageBox" class="cv-footer-note mt-2 text-muted"></div>
 
           <div class="d-flex gap-2 flex-wrap">
-            <button class="cv-primary-btn" id="imitateBtn">Apply Voice Imitation</button>
-            <a class="cv-ghost-btn d-none" id="downloadBtn" download>Download result</a>
+            <button class="cv-primary-btn" id="recoverBtn">Simulate Loss &amp; Recover</button>
+            <a class="cv-ghost-btn d-none" id="downloadBtn" download>Download recovered audio</a>
             <button class="cv-ghost-btn d-none" id="resetBtn">Try another file</button>
           </div>
 
@@ -166,7 +156,7 @@
 </div>
 
 <script type="module" src="js/auth-guard.js"></script>
-<script type="module" src="js/imitation.js"></script>
+<script type="module" src="js/framerecovery.js"></script>
 
 </body>
 </html>

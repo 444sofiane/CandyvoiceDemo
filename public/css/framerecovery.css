@@ -1,0 +1,56 @@
+/* Frame Recovery-only additions — nav, hero, card, dropzone, file row,
+   progress bar, buttons all come from css/noisefilter.css so this page
+   stays visually consistent with NoizeOff/Imitation/Deepfake. This file
+   only adds the frame-loss slider, which has no equivalent elsewhere. */
+
+.cv-frame-recovery-control {
+  border: 1px solid var(--cv-line);
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(180deg, #FBF9FF 0%, #FFFFFF 100%);
+}
+
+.cv-frame-recovery-value {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--cv-purple-700);
+}
+
+.cv-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cv-purple-300), var(--cv-purple-100));
+  outline: none;
+}
+
+.cv-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cv-purple-700);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(108, 43, 217, 0.4);
+  cursor: pointer;
+}
+
+.cv-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cv-purple-700);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(108, 43, 217, 0.4);
+  cursor: pointer;
+}
+
+.cv-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cv-purple-300), var(--cv-purple-100));
+}
