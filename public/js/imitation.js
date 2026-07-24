@@ -95,12 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultBlock = document.getElementById('resultBlock');
   const resultAudio = document.getElementById('resultAudio');
 
+  // Without this, the browser can taint the media element's audio graph
+  // once an AnalyserNode is attached, and getByteFrequencyData() silently
+  // returns all-zero/flat data — audio still plays fine, but the
+  // spectrogram shows garbage values. Matches noisefilter.js.
   originalAudio.crossOrigin = 'anonymous';
   resultAudio.crossOrigin = 'anonymous';
 
   const spectrogramBlock = document.getElementById('spectrogramBlock');
   const originalSpectrogramEl = document.getElementById('originalSpectrogram');
   const resultSpectrogramEl = document.getElementById('resultSpectrogram');
+  const compareBtn = document.getElementById('compareBtn');
 
   const imitateBtn = document.getElementById('imitateBtn');
   const downloadBtn = document.getElementById('downloadBtn');
@@ -110,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedVoice = null; // { folder, label, image }
   let currentObjectUrl = null;
   let currentFile = null;
+  let comparePlaying = false; // for spectrogram compare button
 
   const apiUrl = buildApiUrl({
     search: window.location.search,
@@ -126,12 +132,96 @@ document.addEventListener('DOMContentLoaded', () => {
     resultAudio,
   });
 
-  // Original and result audio are intentionally independent here — no
-  // shared play/pause/seek, no "compare" button. Each <audio> element and
-  // its spectrogram view track only themselves: noise-filter-spectrogram.js
-  // already re-arms/pauses each view's tick() loop off that view's own
-  // mediaEl 'play' event, so the two spectrograms naturally follow their
-  // own player's progress bar without any wiring needed here.
+  // ---- Original/result playback sync --------------------------------
+  // Mirrors noisefilter.js's setupAudioSync: pressing play/pause/seek on
+  // either the original or the imitated result drives the other in
+  // lockstep, so the two spectrogram panels (which each re-arm on their
+  // own media element's 'play'/'pause' events) stay synced to actual
+  // playback progress too — not just to the manual compare button.
+  function hasUsableSrc(el) {
+    return Boolean(el.currentSrc || el.src);
+  }
+
+  function setupAudioSync(a, b) {
+    const DRIFT_TOLERANCE = 0.15; // seconds
+    let syncing = false;
+
+    function syncTimeFrom(source, target) {
+      if (syncing || !hasUsableSrc(target)) return;
+      if (Math.abs(target.currentTime - source.currentTime) <= DRIFT_TOLERANCE) return;
+
+      syncing = true;
+      try {
+        target.currentTime = source.currentTime;
+      } catch (err) {
+      }
+      syncing = false;
+    }
+
+    a.addEventListener('seeking', () => syncTimeFrom(a, b));
+    b.addEventListener('seeking', () => syncTimeFrom(b, a));
+
+    a.addEventListener('play', () => {
+      if (hasUsableSrc(b) && b.paused) b.play().catch(() => {});
+    });
+    b.addEventListener('play', () => {
+      if (hasUsableSrc(a) && a.paused) a.play().catch(() => {});
+    });
+
+    a.addEventListener('pause', () => {
+      if (!b.paused) b.pause();
+    });
+    b.addEventListener('pause', () => {
+      if (!a.paused) a.pause();
+    });
+
+    a.addEventListener('timeupdate', () => {
+      if (!a.paused && !b.paused) syncTimeFrom(a, b);
+    });
+    b.addEventListener('timeupdate', () => {
+      if (!a.paused && !b.paused) syncTimeFrom(b, a);
+    });
+  }
+
+  setupAudioSync(originalAudio, resultAudio);
+
+  // Compare button — same pattern as noisefilter.js's compareBtn, but
+  // driving spectrogramController instead of a level graph.
+  if (compareBtn) {
+    compareBtn.addEventListener('click', () => {
+      if (!spectrogramController) {
+        console.error('Spectrogram controller is not initialized.');
+        return;
+      }
+
+      if (comparePlaying) {
+        spectrogramController.stop();
+        originalAudio.pause();
+        resultAudio.pause();
+        compareBtn.textContent = 'Play & compare spectrograms';
+        comparePlaying = false;
+      } else {
+        // Always start the comparison from the top, regardless of wherever
+        // the user last scrubbed either player to.
+        originalAudio.currentTime = 0;
+        resultAudio.currentTime = 0;
+        spectrogramController.start();
+        originalAudio.play().catch(() => {});
+        if (hasUsableSrc(resultAudio)) resultAudio.play().catch(() => {});
+        compareBtn.textContent = 'Stop comparison';
+        comparePlaying = true;
+      }
+    });
+
+    [originalAudio, resultAudio].forEach((el) => {
+      el.addEventListener('ended', () => {
+        if (originalAudio.ended && resultAudio.ended) {
+          compareBtn.textContent = 'Play & compare spectrograms';
+          comparePlaying = false;
+        }
+      });
+    });
+  }
 
   function setMessage(message, isError = false) {
     setMessageText(messageBox, message, isError);
@@ -203,6 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (spectrogramController) {
       spectrogramController.stop();
     }
+    originalAudio.pause();
+    resultAudio.pause();
+    if (compareBtn) compareBtn.textContent = 'Play & compare spectrograms';
+    comparePlaying = false;
     spectrogramBlock.classList.add('d-none');
   }
 
@@ -404,7 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show and initialize spectrogram — only now, once there's an
         // actual result to compare against the original.
         spectrogramBlock.classList.remove('d-none');
-        spectrogramController.refreshOriginal();
         spectrogramController.refreshResult();
       }
 
@@ -442,6 +535,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset spectrogram
     spectrogramController.reset();
     spectrogramBlock.classList.add('d-none');
+    compareBtn.textContent = 'Play & compare spectrograms';
+    comparePlaying = false;
 
     imitateBtn.textContent = 'Apply Voice Imitation';
     setStatus('idle');
