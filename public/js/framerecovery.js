@@ -448,7 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadBtn.classList.add('d-none');
     resetBtn.classList.add('d-none');
 
+    originalAudio.pause();
     originalAudio.removeAttribute('src');
+    originalAudio.load();
     originalPreview.classList.add('d-none');
 
     spectrogramController.reset();

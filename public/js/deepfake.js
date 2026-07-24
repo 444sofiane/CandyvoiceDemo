@@ -417,7 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setMessage('');
     progressBar.style.width = '0%';
 
+    originalAudio.pause();
     originalAudio.removeAttribute('src');
+    originalAudio.load();
     originalPreview.classList.add('d-none');
 
     resultBlock.classList.add('d-none');
