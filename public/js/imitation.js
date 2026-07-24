@@ -125,6 +125,59 @@ document.addEventListener('DOMContentLoaded', () => {
     resultAudio,
   });
 
+  // ---- Original/result playback sync --------------------------------
+  // Mirrors noisefilter.js's setupAudioSync: pressing play/pause/seek on
+  // either the original or the imitated result drives the other in
+  // lockstep, so the two spectrogram panels (which each re-arm on their
+  // own media element's 'play'/'pause' events) stay synced to actual
+  // playback progress too — not just to the manual compare button.
+  function hasUsableSrc(el) {
+    return Boolean(el.currentSrc || el.src);
+  }
+
+  function setupAudioSync(a, b) {
+    const DRIFT_TOLERANCE = 0.15; // seconds
+    let syncing = false;
+
+    function syncTimeFrom(source, target) {
+      if (syncing || !hasUsableSrc(target)) return;
+      if (Math.abs(target.currentTime - source.currentTime) <= DRIFT_TOLERANCE) return;
+
+      syncing = true;
+      try {
+        target.currentTime = source.currentTime;
+      } catch (err) {
+      }
+      syncing = false;
+    }
+
+    a.addEventListener('seeking', () => syncTimeFrom(a, b));
+    b.addEventListener('seeking', () => syncTimeFrom(b, a));
+
+    a.addEventListener('play', () => {
+      if (hasUsableSrc(b) && b.paused) b.play().catch(() => {});
+    });
+    b.addEventListener('play', () => {
+      if (hasUsableSrc(a) && a.paused) a.play().catch(() => {});
+    });
+
+    a.addEventListener('pause', () => {
+      if (!b.paused) b.pause();
+    });
+    b.addEventListener('pause', () => {
+      if (!a.paused) a.pause();
+    });
+
+    a.addEventListener('timeupdate', () => {
+      if (!a.paused && !b.paused) syncTimeFrom(a, b);
+    });
+    b.addEventListener('timeupdate', () => {
+      if (!a.paused && !b.paused) syncTimeFrom(b, a);
+    });
+  }
+
+  setupAudioSync(originalAudio, resultAudio);
+
   // Compare button for spectrogram
   if (compareBtn) {
     compareBtn.addEventListener('click', () => {
@@ -135,10 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (comparePlaying) {
         spectrogramController.stop();
+        originalAudio.pause();
+        resultAudio.pause();
         compareBtn.textContent = 'Play & compare spectrograms';
         comparePlaying = false;
       } else {
+        // Always start the comparison from the top, regardless of wherever
+        // the user last scrubbed either player to.
+        originalAudio.currentTime = 0;
+        resultAudio.currentTime = 0;
         spectrogramController.start();
+        originalAudio.play().catch(() => {});
+        if (hasUsableSrc(resultAudio)) resultAudio.play().catch(() => {});
         compareBtn.textContent = 'Stop comparison';
         comparePlaying = true;
       }
@@ -296,9 +357,11 @@ document.addEventListener('DOMContentLoaded', () => {
     originalAudio.src = currentObjectUrl;
     originalPreview.classList.remove('d-none');
 
-    // Spectrogram: reset and show original
+    // Spectrogram: reset and pre-render the original view, but keep the
+    // block itself hidden until imitation actually succeeds (matches
+    // noisefilter.js — no spectrogram before there's a result to compare).
+    spectrogramBlock.classList.add('d-none');
     spectrogramController.reset();
-    spectrogramBlock.classList.remove('d-none'); // Show container before drawing
     spectrogramController.refreshOriginal();
 
     resultAudio.removeAttribute('src');
@@ -420,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.classList.remove('d-none');
         resetBtn.classList.remove('d-none');
 
-        // Show and initialize spectrogram
+        // Show and initialize spectrogram — only now, once there's an
+        // actual result to compare against the original.
         spectrogramBlock.classList.remove('d-none');
         spectrogramController.refreshResult();
       }
@@ -459,6 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset spectrogram
     spectrogramController.reset();
     spectrogramBlock.classList.add('d-none');
+    compareBtn.textContent = 'Play & compare spectrograms';
+    comparePlaying = false;
 
     imitateBtn.textContent = 'Apply Voice Imitation';
     setStatus('idle');
