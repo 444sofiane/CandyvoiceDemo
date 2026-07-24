@@ -152,10 +152,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (comparePlaying) {
       spectrogramController.stop();
+      originalAudio.pause();
+      resultAudio.pause();
       compareBtn.textContent = 'Play & compare levels';
       comparePlaying = false;
     } else {
+      // Always start the comparison from the top, regardless of wherever
+      // the user last scrubbed either player to (matches imitation.js).
+      originalAudio.currentTime = 0;
+      resultAudio.currentTime = 0;
       spectrogramController.start();
+      originalAudio.play().catch(() => {});
+      if (hasUsableSrc(resultAudio)) resultAudio.play().catch(() => {});
       compareBtn.textContent = 'Stop comparison';
       comparePlaying = true;
     }
