@@ -1,95 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CandyVoice — NoizeOff</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CandyVoice — NoizeOff</title>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="icon" type="image/png" href="image/image.png">
-<link rel="apple-touch-icon" href="image/image.png">
-<link rel="stylesheet" href="css/noisefilter.css">
-<link rel="stylesheet" href="css/user-menu.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="icon" type="image/png" href="image/image.png">
+  <link rel="apple-touch-icon" href="image/image.png">
+  <link rel="stylesheet" href="css/noisefilter.css">
+  <link rel="stylesheet" href="css/user-menu.css">
 
-<script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
-<script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.min.js"></script>
-<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.min.js"></script>
+  <script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/143485006.js"></script>
 
 </head>
 
 <body>
 
-<nav class="cv-nav py-3">
-  <div class="container d-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-3 flex-shrink-0">
-      <span class="cv-logo">
-        <img src="image/image.png" alt="CandyVoice logo" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
-        CandyVoice
-      </span>
-      <span class="cv-pill">NoizeOff</span>
-    </div>
-    <div class="cv-feature-switcher" aria-label="Feature navigation">
-      <a class="cv-feature-link" href="deepfake.html">Deepfake detection</a>
-      <a class="cv-feature-link" href="imitation.html">Imitation</a>
-      <a class="cv-feature-link is-active" href="noisefilter.html" aria-current="page">NoizeOff</a>
-      <a class="cv-feature-link" href="frameRecovery.html">Frame Recovery</a>
-    </div>
-    <div class="cv-user-menu" id="userMenu">
-      <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false" title="Account">
-        <span class="cv-avatar-circle" id="avatarInitial">–</span>
-      </button>
-      <div class="cv-user-dropdown d-none" id="userDropdown">
-        <p class="cv-user-email" id="userEmailDisplay">—</p>
-        <div class="cv-user-usage">
-          <div class="cv-user-usage-row">
-            <span class="cv-user-usage-label">Audio processed</span>
-            <span class="cv-user-usage-value" id="usageValue">0.0 / 60 min</span>
+  <nav class="cv-nav py-3">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3 flex-shrink-0">
+        <span class="cv-logo">
+          <img src="image/image.png" alt="CandyVoice logo"
+            style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;">
+          CandyVoice
+        </span>
+        <span class="cv-pill">NoizeOff</span>
+      </div>
+      <div class="cv-feature-switcher" aria-label="Feature navigation">
+        <a class="cv-feature-link" href="deepfake.html">Deepfake detection</a>
+        <a class="cv-feature-link" href="imitation.html">Imitation</a>
+        <a class="cv-feature-link is-active" href="noisefilter.html" aria-current="page">NoizeOff</a>
+        <a class="cv-feature-link" href="frameRecovery.html">Frame Recovery</a>
+      </div>
+      <div class="cv-user-menu" id="userMenu">
+        <button type="button" class="cv-avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false"
+          title="Account">
+          <span class="cv-avatar-circle" id="avatarInitial">–</span>
+        </button>
+        <div class="cv-user-dropdown d-none" id="userDropdown">
+          <p class="cv-user-email" id="userEmailDisplay">—</p>
+          <div class="cv-user-usage">
+            <div class="cv-user-usage-row">
+              <span class="cv-user-usage-label">Audio processed</span>
+              <span class="cv-user-usage-value" id="usageValue">0.0 / 60 min</span>
+            </div>
+            <div class="cv-usage-bar-track">
+              <div class="cv-usage-bar-fill" id="usageBarFill"></div>
+            </div>
           </div>
-          <div class="cv-usage-bar-track">
-            <div class="cv-usage-bar-fill" id="usageBarFill"></div>
-          </div>
+          <hr class="cv-user-divider">
+          <button type="button" class="cv-user-signout" id="signOutBtn">Sign out</button>
         </div>
-        <hr class="cv-user-divider">
-        <button type="button" class="cv-user-signout" id="signOutBtn">Sign out</button>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="container cv-hero">
-  <div class="row g-5">
-    <div class="col-lg-5">
-      <div class="cv-eyebrow mb-2">Audio tools</div>
-      <h1 class="mb-3">Strip the noise.<br><span class="accent">Keep the voice.</span></h1>
-      <p class="lead mb-4">Upload any audio file and CandyVoice's NoizeOff removes hiss, hum, and background clutter — leaving a clean, broadcast-ready track.</p>
+  <div class="container cv-hero">
+    <div class="row g-5">
+      <div class="col-lg-5">
+        <div class="cv-eyebrow mb-2">Audio tools</div>
+        <h1 class="mb-3">Strip the noise.<br><span class="accent">Keep the voice.</span></h1>
+        <p class="lead mb-4">Upload any audio file and CandyVoice's NoizeOff removes hiss, hum, and background clutter —
+          leaving a clean, broadcast-ready track.</p>
 
-      <ul class="list-unstyled cv-side-list">
-        <li><span class="dot">1</span><span>Drop in any audio file — WAV, MP3, M4A, FLAC, OGG.</span></li>
-        <li><span class="dot">2</span><span>The filter analyzes and separates voice from background noise.</span></li>
-        <li><span class="dot">3</span><span>Preview the cleaned result and download it in one click.</span></li>
-      </ul>
-    </div>
+        <ul class="list-unstyled cv-side-list">
+          <li><span class="dot">1</span><span>Drop in any audio file — WAV, MP3, M4A, FLAC, OGG.</span></li>
+          <li><span class="dot">2</span><span>The filter analyzes and separates voice from background noise.</span></li>
+          <li><span class="dot">3</span><span>Preview the cleaned result and download it in one click.</span></li>
+        </ul>
+      </div>
 
-    <div class="col-lg-7">
-      <div class="cv-card p-4 p-md-5">
+      <div class="col-lg-7">
+        <div class="cv-card p-4 p-md-5">
 
-        <div id="uploadStep">
-          <div class="cv-dropzone" id="dropzone">
-            <div class="cv-drop-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#6C2BD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M4 16V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V16" stroke="#6C2BD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+          <div id="uploadStep">
+            <div class="cv-dropzone" id="dropzone">
+              <div class="cv-drop-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#6C2BD9" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M4 16V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V16" stroke="#6C2BD9"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <h3>Drag & drop your audio file</h3>
+              <p>or click to browse — any format</p>
+              <button type="button" class="cv-browse-btn" id="browseBtn">Choose file</button>
+              <input type="file" id="fileInput" accept="audio/*" hidden>
             </div>
-            <h3>Drag & drop your audio file</h3>
-            <p>or click to browse — any format</p>
-            <button type="button" class="cv-browse-btn" id="browseBtn">Choose file</button>
-            <input type="file" id="fileInput" accept="audio/*" hidden>
+
+            <!-- Display a message box asking if the file uploaded is confidential or not user should check a box (yes/no)-->
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="confidentialCheck">
+              <label class="form-check-label" for="confidentialCheck">
+                I confirm that the uploaded file does not contain confidential information.
+              </label>
+            </div>
           </div>
 
-          
         </div>
 
         <div id="workStep" class="d-none">
@@ -97,9 +113,10 @@
           <div class="cv-file-row mb-3">
             <div class="cv-file-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 18V5L20 3V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
-                <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 18V5L20 3V16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2" />
+                <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="2" />
               </svg>
             </div>
             <div class="flex-grow-1">
@@ -132,7 +149,7 @@
             <div class="cv-level-graph-wrap">
               <canvas id="levelCanvas"></canvas>
             </div>
-            
+
           </div>
 
           <div id="spectrogramBlock" class="mb-3 d-none">
@@ -154,13 +171,15 @@
         </div>
 
       </div>
-      <p class="cv-footer-note mt-3 mb-0">Files are processed for this session only and are not stored by CandyVoice.</p>
+      <p class="cv-footer-note mt-3 mb-0">Files are processed for this session only and are not stored by CandyVoice.
+      </p>
     </div>
   </div>
-</div>
+  </div>
 
-<script type="module" src="js/auth-guard.js"></script>
-<script type="module" src="js/noisefilter.js"></script>
+  <script type="module" src="js/auth-guard.js"></script>
+  <script type="module" src="js/noisefilter.js"></script>
 
 </body>
+
 </html>

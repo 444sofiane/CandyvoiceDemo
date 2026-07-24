@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const originalSpectrogramEl = document.getElementById('originalSpectrogram');
   const resultSpectrogramEl = document.getElementById('resultSpectrogram');
 
+  const confidentialCheck = document.getElementById('confidentialCheck');
+
   let currentObjectUrl = null;
   let currentFile = null;
   let comparePlaying = false;
@@ -379,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'X-File-Name': fileToUpload.name,
           'X-Output-Name': fileToUpload.name.replace(/\.[^.]+$/u, '_recovered.wav'),
           'X-Frame-Recovery-Factor': frameRecoveryFactor.toFixed(2),
+          'X-Confidential-Check': confidentialCheck.checked ? 'true' : 'false',
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,

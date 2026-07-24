@@ -84,6 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const graphCanvas = document.getElementById('deepfakeGraphCanvas');
   const deepfakeGraph = graphCanvas ? createDeepfakeGraph({ canvas: graphCanvas }) : null;
 
+  const confidentialCheck = document.getElementById('confidentialCheck');
+
   const syncPlayheadToggle = document.getElementById('syncPlayheadToggle');
   let syncPlayheadEnabled = syncPlayheadToggle ? syncPlayheadToggle.checked : true;
 
@@ -307,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: {
           'Content-Type': 'application/octet-stream',
           'X-File-Name': fileToUpload.name,
+          'X-Confidential-Check': confidentialCheck.checked ? 'true' : 'false',
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,

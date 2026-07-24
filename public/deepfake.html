@@ -94,87 +94,96 @@
               <button type="button" class="cv-browse-btn" id="browseBtn">Choose file</button>
               <input type="file" id="fileInput" accept="audio/*" hidden>
             </div>
+
+            <!-- Display a message box asking if the file uploaded is confidential or not user should check a box (yes/no)-->
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="confidentialCheck">
+              <label class="form-check-label" for="confidentialCheck">
+                I confirm that the uploaded file does not contain confidential information.
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="workStep" class="d-none">
+
+          <div class="cv-file-row mb-3">
+            <div class="cv-file-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 18V5L20 3V16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2" />
+                <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="2" />
+              </svg>
+            </div>
+            <div class="flex-grow-1">
+              <p class="cv-file-name" id="fileName">recording.mp3</p>
+              <p class="cv-file-meta" id="fileMeta">—</p>
+            </div>
+            <span class="cv-status-badge cv-status-idle" id="statusBadge">Ready</span>
+            <button class="cv-remove-btn" id="removeBtn" title="Remove file">&times;</button>
           </div>
 
-          <div id="workStep" class="d-none">
-
-            <div class="cv-file-row mb-3">
-              <div class="cv-file-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 18V5L20 3V16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                  <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2" />
-                  <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="2" />
-                </svg>
-              </div>
-              <div class="flex-grow-1">
-                <p class="cv-file-name" id="fileName">recording.mp3</p>
-                <p class="cv-file-meta" id="fileMeta">—</p>
-              </div>
-              <span class="cv-status-badge cv-status-idle" id="statusBadge">Ready</span>
-              <button class="cv-remove-btn" id="removeBtn" title="Remove file">&times;</button>
+          <div class="mb-3">
+            <div class="cv-progress">
+              <div class="cv-progress-bar" id="progressBar"></div>
             </div>
+          </div>
 
-            <div class="mb-3">
-              <div class="cv-progress">
-                <div class="cv-progress-bar" id="progressBar"></div>
+          <div id="originalPreview" class="mb-3 d-none">
+            <p class="cv-footer-note mb-1">Uploaded audio</p>
+            <audio controls id="originalAudio"></audio>
+          </div>
+
+          <div id="deepfakeGraphBlock" class="mb-3 d-none">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+              <p class="cv-footer-note mb-0">Live detection — instantaneous vs. running average</p>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="syncPlayheadToggle" checked>
+                <label class="form-check-label cv-footer-note" for="syncPlayheadToggle">Sync with playback</label>
               </div>
             </div>
-
-            <div id="originalPreview" class="mb-3 d-none">
-              <p class="cv-footer-note mb-1">Uploaded audio</p>
-              <audio controls id="originalAudio"></audio>
+            <div class="cv-deepfake-graph-wrap">
+              <canvas id="deepfakeGraphCanvas"></canvas>
             </div>
+            <p class="cv-footer-note mt-2 mb-0">Once toggled on, play the audio above and a marker follows along the
+              chart. Click anywhere on the chart to jump playback to that point.</p>
+          </div>
 
-            <div id="deepfakeGraphBlock" class="mb-3 d-none">
-              <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-                <p class="cv-footer-note mb-0">Live detection — instantaneous vs. running average</p>
-                <div class="form-check form-switch mb-0">
-                  <input class="form-check-input" type="checkbox" id="syncPlayheadToggle" checked>
-                  <label class="form-check-label cv-footer-note" for="syncPlayheadToggle">Sync with playback</label>
-                </div>
+          <div id="resultBlock" class="mb-3 d-none">
+            <div class="cv-deepfake-result">
+              <div class="cv-deepfake-score-row">
+                <span class="cv-deepfake-score" id="deepfakeScore">0.0%</span>
+                <span class="cv-deepfake-verdict" id="deepfakeVerdict">—</span>
               </div>
-              <div class="cv-deepfake-graph-wrap">
-                <canvas id="deepfakeGraphCanvas"></canvas>
+              <div class="cv-deepfake-meter-track">
+                <div class="cv-deepfake-meter-fill" id="deepfakeMeterFill"></div>
               </div>
-              <p class="cv-footer-note mt-2 mb-0">Once toggled on, play the audio above and a marker follows along the
-                chart. Click anywhere on the chart to jump playback to that point.</p>
+              <p class="cv-footer-note mt-2 mb-0">Average deepfake score across the whole file. Higher means more of
+                the audio looks synthetically generated.</p>
             </div>
+          </div>
 
-            <div id="resultBlock" class="mb-3 d-none">
-              <div class="cv-deepfake-result">
-                <div class="cv-deepfake-score-row">
-                  <span class="cv-deepfake-score" id="deepfakeScore">0.0%</span>
-                  <span class="cv-deepfake-verdict" id="deepfakeVerdict">—</span>
-                </div>
-                <div class="cv-deepfake-meter-track">
-                  <div class="cv-deepfake-meter-fill" id="deepfakeMeterFill"></div>
-                </div>
-                <p class="cv-footer-note mt-2 mb-0">Average deepfake score across the whole file. Higher means more of
-                  the audio looks synthetically generated.</p>
-              </div>
-            </div>
+          <div id="messageBox" class="cv-footer-note mt-2 text-muted"></div>
 
-            <div id="messageBox" class="cv-footer-note mt-2 text-muted"></div>
-
-            <div class="d-flex gap-2 flex-wrap">
-              <button class="cv-primary-btn" id="analyzeBtn">Run detection</button>
-              <button class="cv-ghost-btn d-none" id="resetBtn">Analyze another file</button>
-            </div>
-
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="cv-primary-btn" id="analyzeBtn">Run detection</button>
+            <button class="cv-ghost-btn d-none" id="resetBtn">Analyze another file</button>
           </div>
 
         </div>
 
-        <div id="survey-container" style="display:none;">
-          <!-- HubSpot embed code -->
-
-        </div>
-
-        <p class="cv-footer-note mt-3 mb-0">Files are processed for this session only and are not stored by CandyVoice.
-        </p>
       </div>
+
+      <div id="survey-container" style="display:none;">
+        <!-- HubSpot embed code -->
+
+      </div>
+
+      <p class="cv-footer-note mt-3 mb-0">Files are processed for this session only and are not stored by CandyVoice.
+      </p>
     </div>
+  </div>
   </div>
 
   <script type="module" src="js/auth-guard.js"></script>

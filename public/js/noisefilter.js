@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const originalSpectrogramEl = document.getElementById('originalSpectrogram');
   const resultSpectrogramEl = document.getElementById('resultSpectrogram');
 
+  const confidentialCheck = document.getElementById('confidentialCheck');
+
   let currentObjectUrl = null;
   let currentFile = null;
   let comparePlaying = false;
@@ -348,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/octet-stream',
           'X-File-Name': fileToUpload.name,
           'X-Output-Name': fileToUpload.name.replace(/\.[^.]+$/u, '_filtered.wav'),
+          'X-Confidential-Check': confidentialCheck.checked ? 'true' : 'false',
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,

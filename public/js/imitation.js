@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const originalAudio = document.getElementById('originalAudio');
   const resultBlock = document.getElementById('resultBlock');
   const resultAudio = document.getElementById('resultAudio');
+  const confidentialCheck = document.getElementById('confidentialCheck');
 
   // Without this, the browser can taint the media element's audio graph
   // once an AnalyserNode is attached, and getByteFrequencyData() silently
@@ -493,6 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'X-File-Name': fileToUpload.name,
           'X-Output-Name': fileToUpload.name.replace(/\.[^.]+$/u, '_imitated.wav'),
           'X-Voice-Model': selectedVoice.folder,
+          'X-Confidential-Check': confidentialCheck.checked ? 'true' : 'false',
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,
