@@ -219,6 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     voiceStep.classList.remove('d-none');
     uploadStep.classList.add('d-none');
     workStep.classList.add('d-none');
+
+    // Stop spectrogram to save resources and hide it
+    if (spectrogramController) {
+      spectrogramController.stop();
+    }
+    spectrogramBlock.classList.add('d-none');
   }
 
   changeVoiceBtn.addEventListener('click', backToVoicePicker);
@@ -289,6 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     originalAudio.src = currentObjectUrl;
     originalPreview.classList.remove('d-none');
+
+    // Spectrogram: reset and show original
+    spectrogramController.reset();
+    spectrogramBlock.classList.remove('d-none'); // Show container before drawing
+    spectrogramController.refreshOriginal();
 
     resultAudio.removeAttribute('src');
     resultBlock.classList.add('d-none');
@@ -408,6 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.setAttribute('download', `imitated-${fileToUpload.name}`);
         downloadBtn.classList.remove('d-none');
         resetBtn.classList.remove('d-none');
+
+        // Show and initialize spectrogram
+        spectrogramBlock.classList.remove('d-none');
+        spectrogramController.refreshResult();
       }
 
       imitateBtn.textContent = 'Imitated';
@@ -440,6 +455,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     originalAudio.removeAttribute('src');
     originalPreview.classList.add('d-none');
+
+    // Reset spectrogram
+    spectrogramController.reset();
+    spectrogramBlock.classList.add('d-none');
 
     imitateBtn.textContent = 'Apply Voice Imitation';
     setStatus('idle');

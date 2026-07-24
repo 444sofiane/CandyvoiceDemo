@@ -36,8 +36,8 @@ export function createSpectrogramController({ originalSpectrogramEl, resultSpect
 
     view.canvas = canvas;
     view.ctx = canvas.getContext('2d');
-    resizeCanvas(view);
-    paintEmpty(view);
+    resizeCanvas(view); // Ensure proper sizing
+    paintEmpty(view); // Paint initial empty state
     return view;
   }
 
@@ -184,14 +184,16 @@ export function createSpectrogramController({ originalSpectrogramEl, resultSpect
 
       if (!view || !view.containerEl) return;
 
-      resizeCanvas(view);
+      resizeCanvas(view); // Ensure canvas is properly sized
       if (view.rafId) {
         window.cancelAnimationFrame(view.rafId);
         view.rafId = null;
       }
 
       view.history = [];
-      drawSpectrogram(view);
+      if (view.canvas) {
+        paintEmpty(view); // Paint empty state with proper sizing
+      }
       if (view.mediaEl && view.mediaEl.currentSrc) {
         view.rafId = window.requestAnimationFrame(() => tick(view));
       }
@@ -210,7 +212,10 @@ export function createSpectrogramController({ originalSpectrogramEl, resultSpect
   function refreshOriginal() {
     const view = createView('original');
     view.history = [];
-    paintEmpty(view);
+    if (view.canvas) {
+      resizeCanvas(view);
+      paintEmpty(view);
+    }
     if (view.mediaEl && view.mediaEl.currentSrc) {
       start(view);
     }
@@ -219,7 +224,10 @@ export function createSpectrogramController({ originalSpectrogramEl, resultSpect
   function refreshResult() {
     const view = createView('result');
     view.history = [];
-    paintEmpty(view);
+    if (view.canvas) {
+      resizeCanvas(view);
+      paintEmpty(view);
+    }
     if (view.mediaEl && view.mediaEl.currentSrc) {
       start(view);
     }
@@ -233,6 +241,7 @@ export function createSpectrogramController({ originalSpectrogramEl, resultSpect
       }
       view.history = [];
       if (view.canvas) {
+        resizeCanvas(view);
         paintEmpty(view);
       }
     });
