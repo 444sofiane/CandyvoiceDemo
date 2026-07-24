@@ -117,6 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFile = null;
   let comparePlaying = false; // for spectrogram compare button
 
+  // Cancellation: requestId guards against a stale in-flight request's
+  // response landing after the user has moved on (reset/remove/another
+  // upload), and activeAbortController lets us actually cut the network
+  // request short instead of just ignoring its eventual result. Same
+  // pattern as deepfake.js's analyzeBtn flow.
+  let currentRequestId = 0;
+  let activeAbortController = null;
+
   const apiUrl = buildApiUrl({
     search: window.location.search,
     bodyDataset: document.body.dataset,
@@ -289,6 +297,14 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadStep.classList.add('d-none');
     workStep.classList.add('d-none');
 
+    // Cancel any in-flight imitation request — the user is bailing out of
+    // this file entirely, so there's no reason to let it keep running.
+    currentRequestId++;
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
+
     // Stop spectrogram to save resources and hide it
     if (spectrogramController) {
       spectrogramController.stop();
@@ -405,7 +421,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const requestId = ++currentRequestId;
+    activeAbortController = new AbortController();
+
     const minutesNeeded = await getAudioDurationMinutes(originalAudio);
+    if (requestId !== currentRequestId) return;
 
     if (auth.currentUser && !hasQuotaFor(auth.currentUser.uid, minutesNeeded)) {
       const remaining = getRemainingMinutes(auth.currentUser.uid);
@@ -428,7 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
           setMessage(stage === 'decoding' ? 'Decoding audio…' : 'Encoding WAV…');
         },
       });
+      if (requestId !== currentRequestId) return;
     } catch (error) {
+      if (requestId !== currentRequestId) return;
       console.error(error);
       setMessage(error.message || 'Could not convert this file.', true);
       setStatus('idle');
@@ -452,7 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let idToken;
     try {
       idToken = await auth.currentUser.getIdToken();
+      if (requestId !== currentRequestId) return;
     } catch (error) {
+      if (requestId !== currentRequestId) return;
       console.error('Failed to get ID token:', error);
       setMessage('Could not verify your session. Please sign in again.', true);
       setStatus('idle');
@@ -472,10 +496,13 @@ document.addEventListener('DOMContentLoaded', () => {
           Authorization: `Bearer ${idToken}`,
         },
         body: fileToUpload,
+        signal: activeAbortController.signal,
       });
+      if (requestId !== currentRequestId) return;
 
       console.log('API response status:', response.status, response.statusText);
       const data = await parseJsonResponse(response);
+      if (requestId !== currentRequestId) return;
 
       if (!response.ok || data.error) {
         throw new Error(data.error || 'Processing failed.');
@@ -503,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       imitateBtn.textContent = 'Imitated';
     } catch (error) {
+      if (requestId !== currentRequestId) return;
       console.error(error);
       setMessage(error.message || 'Processing failed.', true);
       setStatus('idle');
@@ -512,6 +540,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function resetAll() {
+    currentRequestId++;
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
+
     currentFile = null;
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
